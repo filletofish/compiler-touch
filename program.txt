@@ -1,0 +1,13 @@
+a = 3
+b = 0
+
+for i = 1, b in
+    a = a + 3
+
+if b then
+    a = a - 2
+else
+    a = 0
+
+
+
