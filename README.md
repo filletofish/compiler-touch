@@ -1,7 +1,6 @@
 # llvm-touch
 
-Front-end part of compiler sample to generate intermediate representation for simple language
-
+Front-end part of compiler sample to generate LLVM intermediate representation for simple language.
 Our languange consists of integers, mutating variables, cycles and condition statements.
 
 ### Example:
@@ -94,4 +93,4 @@ clang++ -g -O3 main.cpp Parser.cpp Lexer.cpp Token.cpp Expressions.cpp IRGenerat
 
 * [Documentation](http://llvm.org/docs/index.html)
 * [LLVM Tuturial](http://llvm.org/docs/tutorial/index.html)
-* [Article by IBM]https://www.ibm.com/developerworks/ru/library/os-createcompilerllvm1/
+* [Article by IBM](https://www.ibm.com/developerworks/ru/library/os-createcompilerllvm1/)
