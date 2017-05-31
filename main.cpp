@@ -27,8 +27,8 @@
 
 #include "Parser.hpp"
 #include "Lexer.hpp"
-#include "CodeGenVisitor.hpp"
-#include "AbstractExpresssion.hpp"
+#include "IRGeneration.hpp"
+#include "Expressions.hpp"
 
 
 //===----------------------------------------------------------------------===//

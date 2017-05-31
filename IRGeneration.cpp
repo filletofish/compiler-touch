@@ -6,8 +6,8 @@
 //  Copyright © 2017 filletofish. All rights reserved.
 //
 
-#include "CodeGenVisitor.hpp"
-#include "AbstractExpresssion.hpp"
+#include "IRGeneration.hpp"
+#include "Expressions.hpp"
 
 using namespace llvm;
 

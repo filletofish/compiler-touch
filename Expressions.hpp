@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <string>
-#include "CodeGenVisitor.hpp"
+#include "IRGeneration.hpp"
 class ExprVisitor;
 class Value;
 namespace llvm {};
