@@ -1,11 +1,21 @@
 # llvm-touch
 
-Front-end part of compiler sample to generate LLVM intermediate representation for simple language.
+Sample compiler frontend to generate LLVM intermediate representation for simple language.
 Our languange consists of integers, mutating variables, cycles and condition statements.
+
+### What is IR?
+[Wiki article](https://en.wikipedia.org/wiki/Intermediate_representation)
+Ok, then. With LLVM installed you can look at IR of C language by yourself. Just write simple C program.
+
+Use flag `-emit-llvm` and level of optimization `-O0` (from 0 to 3):
+`clang -S -emit-llvm -O0 helloworld.c`
+
+Now `hello.ll` contains the IR.
 
 ### Example:
 
-This is simple code written with our language.
+Here is simple code written with our language.
+
 #### Code:
 ```
 a = 3
