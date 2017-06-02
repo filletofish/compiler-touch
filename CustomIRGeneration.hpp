@@ -26,13 +26,13 @@ class BasicBlock;
 
 class CustomIRGenerationVisitor {
 public:
-    int* Visit(NumberExpression *exp);
-    int* Visit(VariableExpession *exp);
-    int* Visit(AssignExpression *exp);
+    int Visit(NumberExpression *exp);
+    int Visit(VariableExpession *exp);
+    int Visit(AssignExpression *exp);
     /// generates IR for if condition
-    int* Visit(IfExpression *exp);
-    int* Visit(ForExpression *exp);
-    int* Visit(BinaryExpression *exp);
+    int Visit(IfExpression *exp);
+    int Visit(ForExpression *exp);
+    int Visit(BinaryExpression *exp);
     
     void Dump();
     CustomIRGenerationVisitor(ControlFlowGraph *cfg);
@@ -43,7 +43,7 @@ private:
     BasicBlock *entryBB;
     BasicBlock *CreateBB();
     ControlFlowGraph *cfg;
-    int* LogError(const char*);
+    int LogError(const char*);
 };
 
 #endif /* CustomIRGeneration_hpp */

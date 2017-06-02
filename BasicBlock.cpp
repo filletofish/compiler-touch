@@ -7,6 +7,7 @@
 //
 
 #include "BasicBlock.hpp"
+using namespace std;
 
 void BasicBlock::AddInstruction(AbstractInstruction *instruction) {
     instructions.push_back(instruction);

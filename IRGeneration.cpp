@@ -116,7 +116,7 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
     
     // Create an alloca for the variable in the entry block.
-    AllocaInst *Alloca =Builder->CreateAlloca(llvm::Type::getInt32Ty(*TheContext), 0, exp->indexName.c_str());
+    AllocaInst *Alloca =Builder->CreateAlloca(llvm::Type::getInt32Ty(*TheContext), 0, exp->index->name.c_str());
     
     // Emit the start code first, without 'variable' in scope.
     llvm::Value *StartVal = exp->start->Accept(this);
@@ -126,8 +126,8 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     // Store the value into the alloca.
     Builder->CreateStore(StartVal, Alloca);
     //  If it shadows an existing variable, we have to restore it, so save it now.
-    llvm::AllocaInst *OldVal = namedValues[exp->indexName];
-    namedValues[exp->indexName] = Alloca;
+    llvm::AllocaInst *OldVal = namedValues[exp->index->name];
+    namedValues[exp->index->name] = Alloca;
         
     llvm::BasicBlock *loopCoonditionBB = llvm::BasicBlock::Create(*TheContext, "loopCoonditionBB", TheFunction);
     Builder->CreateBr(loopCoonditionBB);
@@ -138,7 +138,7 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     if (!EndCond)
         return nullptr;
     
-    llvm::Value *CurVar = Builder->CreateLoad(Alloca, exp->indexName.c_str());
+    llvm::Value *CurVar = Builder->CreateLoad(Alloca, exp->index->name.c_str());
     EndCond = Builder->CreateICmpSLT(CurVar, EndCond, "loopcond");
 
     // Make the new basic block for the loop body
@@ -167,7 +167,7 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     }
     // Reload, increment, and restore the alloca.  This handles the case where
     // the body of the loop mutates the variable.
-    CurVar = Builder->CreateLoad(Alloca, exp->indexName.c_str());
+    CurVar = Builder->CreateLoad(Alloca, exp->index->name.c_str());
     llvm::Value *NextVar = Builder->CreateFAdd(CurVar, StepVal, "nextvar");
     Builder->CreateStore(NextVar, Alloca);
     Builder->CreateBr(loopCoonditionBB);
@@ -177,9 +177,9 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     
     // Restore the unshadowed variable.
     if (OldVal)
-        namedValues[exp->indexName] = OldVal;
+        namedValues[exp->index->name] = OldVal;
     else
-        namedValues.erase(exp->indexName);
+        namedValues.erase(exp->index->name);
     
     // for expr always returns 0.
     return llvm::Constant::getNullValue(llvm::Type::getInt32Ty(*TheContext));
