@@ -7,3 +7,9 @@
 //
 
 #include "IRInstructions.hpp"
+#include "Expressions.hpp"
+
+
+std::string AssignInstruction::Dump() {
+    return var->name + " = " + rhs->stringValue;
+}
