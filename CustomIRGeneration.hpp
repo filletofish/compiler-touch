@@ -41,7 +41,7 @@ private:
     std::map<std::string, int*> namedValues;
     BasicBlock *currentBB;
     BasicBlock *entryBB;
-    
+    BasicBlock *CreateBB();
     ControlFlowGraph *cfg;
     int* LogError(const char*);
 };

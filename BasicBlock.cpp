@@ -12,15 +12,13 @@ void BasicBlock::AddInstruction(AbstractInstruction *instruction) {
     instructions.push_back(instruction);
 }
 
-void BasicBlock::AddPredcessor(BasicBlock *bb) {
-    if(std::find(preds.begin(), preds.end(), bb) != preds.end()) {
-        preds.push_back(bb);
+void BasicBlock::AddLink(BasicBlock *pred, BasicBlock *succ) {
+    if(std::find(succ->preds.begin(), succ->preds.end(), pred) == succ->preds.end()) {
+        succ->preds.push_back(pred);
     }
-}
-
-void BasicBlock::AddSuccessor(BasicBlock *bb) {
-    if(std::find(succs.begin(), succs.end(), bb) != succs.end()) {
-        succs.push_back(bb);
+    
+    if(std::find(pred->succs.begin(), pred->succs.end(), succ) == pred->succs.end()) {
+        pred->succs.push_back(succ);
     }
 }
 

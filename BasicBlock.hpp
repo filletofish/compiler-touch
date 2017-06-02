@@ -30,8 +30,7 @@ public:
     std::vector<BasicBlock *> preds;
 
     void AddInstruction(AbstractInstruction *instruction);
-    void AddSuccessor(BasicBlock *bb);
-    void AddPredcessor(BasicBlock *bb);
+    static void AddLink(BasicBlock *pred, BasicBlock *succ);
     
     BasicBlock(int index): index(index) {};
 };

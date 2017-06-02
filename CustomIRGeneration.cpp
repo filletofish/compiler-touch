@@ -12,11 +12,18 @@
 #include "IRInstructions.hpp"
 #include "ControlFlowGraph.hpp"
 
-CustomIRGenerationVisitor::CustomIRGenerationVisitor(ControlFlowGraph *cfg) :cfg(cfg) {
-    BasicBlock *bb = new BasicBlock(0);
-    currentBB = bb;
-    currentBB = bb;
+
+BasicBlock* CustomIRGenerationVisitor::CreateBB() {
+    int nextIndex = (int)cfg->basicBlocks.size();
+    BasicBlock *bb = new BasicBlock(nextIndex);
     cfg->AddBasicBlock(bb);
+    return bb;
+}
+
+CustomIRGenerationVisitor::CustomIRGenerationVisitor(ControlFlowGraph *cfg) :cfg(cfg) {
+    BasicBlock *bb = CreateBB();
+    currentBB = bb;
+    entryBB = bb;
 }
 
 int* CustomIRGenerationVisitor::Visit(NumberExpression *exp) {
@@ -39,7 +46,24 @@ int* CustomIRGenerationVisitor::Visit(AssignExpression *exp) {
 }
 
 int* CustomIRGenerationVisitor::Visit(IfExpression *exp) {
-    return nullptr;
+    BasicBlock *thenBB = CreateBB();
+    BasicBlock *elseBB = CreateBB();
+    BasicBlock *mergeBB = CreateBB();
+    
+    BasicBlock::AddLink(currentBB, thenBB);
+    BasicBlock::AddLink(currentBB, elseBB);
+    BasicBlock::AddLink(thenBB, mergeBB);
+    BasicBlock::AddLink(elseBB, mergeBB);
+    
+    currentBB = thenBB;
+    exp->thenExp->Accept(this);
+    
+    currentBB = elseBB;
+    exp->elseExp->Accept(this);
+    
+    currentBB = mergeBB;
+    
+    return 0;
 }
 
 int* CustomIRGenerationVisitor::Visit(ForExpression *exp) {
@@ -59,8 +83,9 @@ int* CustomIRGenerationVisitor::LogError(const char *) {
 void CustomIRGenerationVisitor::Dump() {
     for (auto it = cfg->basicBlocks.begin(); it != cfg->basicBlocks.end(); ++it) {
         BasicBlock *bb = *it;
+        printf("\n%s\n", bb->stringValue().c_str());
         for (auto it = bb->instructions.begin(); it != bb->instructions.end(); ++it) {
-            printf("%s\n", (*it)->Dump().c_str());
+            printf("\t%s\n", (*it)->Dump().c_str());
         }
 
     }
