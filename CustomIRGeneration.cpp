@@ -87,6 +87,8 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     // Make the new basic block for the loop body
     BasicBlock *LoopBB = CreateBB();
     BasicBlock *AfterBB = CreateBB();
+    BasicBlock::AddLink(loopCoonditionBB, LoopBB);
+    BasicBlock::AddLink(loopCoonditionBB, AfterBB);
     // MARK: Make pseudo step it in expression
     BinaryExpression *pseudoCompExp = new BinaryExpression('-', exp->end, exp->index);
     currentBB->AddInstruction(new BranchInstruction(pseudoCompExp, LoopBB, AfterBB));
@@ -104,7 +106,8 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     BinaryExpression *pseudoStepExp = new BinaryExpression('+', exp->index, new NumberExpression(1));
     currentBB->AddInstruction(new AssignInstruction(exp->index, pseudoStepExp));
     currentBB->AddInstruction(new BranchInstruction(loopCoonditionBB));
-    
+    BasicBlock::AddLink(LoopBB, loopCoonditionBB);
+
     // Any new code will be inserted in AfterBB.
     currentBB = AfterBB;
     
