@@ -66,7 +66,7 @@ AbstractExpression* Parser::ParseIdentifierExpression() {
         LogError("expected '='");
         return nullptr;
     }
-    return new AssignExpression(varName,varDecl);
+    return new AssignExpression(new VariableExpession(varName), varDecl);
 }
 
 AbstractExpression* Parser::ParseBinOpRHS(AbstractExpression * LHS) {
