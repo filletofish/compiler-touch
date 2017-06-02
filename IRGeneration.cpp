@@ -8,6 +8,8 @@
 
 #include "IRGeneration.hpp"
 #include "Expressions.hpp"
+#include "ControlFlowGraph.hpp"
+#include "BasicBlock.hpp"
 
 using namespace llvm;
 
@@ -42,13 +44,13 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(AssignExpression *exp) {
     llvm::Value *assignValue = exp->expr->Accept(this);
     if (!assignValue)
         return nullptr;
-    if (namedValues.count(exp->varName) != 0) {
-        llvm::AllocaInst *Alloca = namedValues[exp->varName];
+    if (namedValues.count(exp->varName()) != 0) {
+        llvm::AllocaInst *Alloca = namedValues[exp->varName()];
         Builder->CreateStore(assignValue, Alloca);
     } else {
-        llvm::AllocaInst *Alloca = Builder->CreateAlloca(llvm::Type::getInt32Ty(*TheContext), 0, exp->varName.c_str());
+        llvm::AllocaInst *Alloca = Builder->CreateAlloca(llvm::Type::getInt32Ty(*TheContext), 0, exp->varName().c_str());
         Builder->CreateStore(assignValue, Alloca);
-        namedValues[exp->varName] = Alloca;
+        namedValues[exp->varName()] = Alloca;
     }
     return assignValue;
 }
@@ -187,3 +189,15 @@ llvm::Value* IRLLVMGenerationVisitor::LogError(const char *Str) {
     fprintf(stderr, "Error: %s\n", Str);
     return nullptr;
 }
+
+
+
+
+
+
+
+
+
+
+
+

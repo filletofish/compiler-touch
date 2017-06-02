@@ -31,26 +31,18 @@ class AssignExpression;
 class IfExpression;
 class ForExpression;
 class BinaryExpression;
+class ControlFlowGraph;
+class BasicBlock;
 
-class ExprVisitor {
+class IRLLVMGenerationVisitor {
 public:
-    virtual llvm::Value* Visit(NumberExpression *exp) = 0;
-    virtual llvm::Value* Visit(VariableExpession *exp) = 0;
-    virtual llvm::Value* Visit(AssignExpression *exp) = 0;
-    virtual llvm::Value* Visit(IfExpression *exp) = 0;
-    virtual llvm::Value* Visit(ForExpression *exp) = 0;
-    virtual llvm::Value* Visit(BinaryExpression *exp) = 0;
-};
-
-class IRLLVMGenerationVisitor : public ExprVisitor {
-public:
-    virtual llvm::Value* Visit(NumberExpression *exp) override;
-    virtual llvm::Value* Visit(VariableExpession *exp) override;
-    virtual llvm::Value* Visit(AssignExpression *exp) override;
+    llvm::Value* Visit(NumberExpression *exp);
+    llvm::Value* Visit(VariableExpession *exp);
+    llvm::Value* Visit(AssignExpression *exp);
     /// generates IR for if condition
-    virtual llvm::Value* Visit(IfExpression *exp) override;
-    virtual llvm::Value* Visit(ForExpression *exp) override;
-    virtual llvm::Value* Visit(BinaryExpression *exp) override;
+    llvm::Value* Visit(IfExpression *exp);
+    llvm::Value* Visit(ForExpression *exp);
+    llvm::Value* Visit(BinaryExpression *exp);
     IRLLVMGenerationVisitor(llvm::LLVMContext *TheContext,
                    llvm::IRBuilder<> *Builder) : TheContext(TheContext), Builder(Builder){};
     
@@ -60,6 +52,4 @@ private:
     std::map<std::string, llvm::AllocaInst *> namedValues;    
     llvm::Value* LogError(const char*);
 };
-
-
 #endif /* CodeGenVisitor_hpp */
