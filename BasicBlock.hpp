@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <vector>
+#include <string>
 
 class AbstractInstruction;
 class BasicBlock;
@@ -23,6 +24,7 @@ class BasicBlock {
 private:
     int index;
 public:
+    std::string stringValue();
     std::vector<AbstractInstruction *> instructions;
     std::vector<BasicBlock *> succs;
     std::vector<BasicBlock *> preds;

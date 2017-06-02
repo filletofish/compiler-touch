@@ -20,7 +20,7 @@ class IfExpression;
 class ForExpression;
 class BinaryExpression;
 class ControlFlowGraph;
-
+class BasicBlock;
 
 enum InstructionType {
     ASSIGN = 0,
@@ -44,6 +44,20 @@ public:
     
     std::string Dump() override;
     AssignInstruction(VariableExpession *var, AbstractExpression *rhs) : AbstractInstruction(ASSIGN), var(var), rhs(rhs) {};
+};
+
+class BranchInstruction: public AbstractInstruction {
+    
+private:
+    BranchInstruction (AbstractExpression *condition, BasicBlock *firstBranchBB, BasicBlock *secondBranchBB, bool isCond) : AbstractInstruction(BRANCH), condition(condition), firstBranchBB(firstBranchBB), secondBranchBB(secondBranchBB), isConditional(isCond) {};
+public:
+    bool isConditional;
+    AbstractExpression *condition;
+    BasicBlock *firstBranchBB;
+    BasicBlock *secondBranchBB;
+    std::string Dump() override;
+    BranchInstruction (AbstractExpression *condition, BasicBlock *trueBranch, BasicBlock *falseBranch) : BranchInstruction(condition, trueBranch, falseBranch, true) {};
+    BranchInstruction (BasicBlock *bb) : BranchInstruction(nullptr, bb, nullptr, false) {};
 };
 
 

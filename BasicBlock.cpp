@@ -23,3 +23,7 @@ void BasicBlock::AddSuccessor(BasicBlock *bb) {
         succs.push_back(bb);
     }
 }
+
+std::string BasicBlock::stringValue() {
+    return "bb #" + std::to_string(index);
+}
