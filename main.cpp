@@ -66,7 +66,7 @@ int main(int argc, const char * argv[]) {
     BasicBlock *BB = BasicBlock::Create(context, "entrypoint", mainFunction);
     Builder.SetInsertPoint(BB);
     
-    CodeGenVisitor codeGenVisitor = CodeGenVisitor(&context, &Builder);
+    IRLLVMGenerationVisitor codeGenVisitor = IRLLVMGenerationVisitor(&context, &Builder);
     llvm::Value *value = nullptr;
     for (std::vector<AbstractExpression *>::iterator it = a.begin(); it != a.end(); ++it)
         value = (*it)->Accept(&codeGenVisitor);

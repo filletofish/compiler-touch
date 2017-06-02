@@ -1,5 +1,5 @@
 //
-//  CodeGenVisitor.cpp
+//  IRLLVMGenerationVisitor.cpp
 //  Compiler
 //
 //  Created by Филипп Федяков on 28.05.17.
@@ -11,18 +11,18 @@
 
 using namespace llvm;
 
-llvm::Value* CodeGenVisitor::Visit(NumberExpression *exp){
+llvm::Value* IRLLVMGenerationVisitor::Visit(NumberExpression *exp){
     return ConstantInt::get(*TheContext, APInt(32, exp->value, false));
 }
 
-llvm::Value* CodeGenVisitor::Visit(VariableExpession *exp) {
+llvm::Value* IRLLVMGenerationVisitor::Visit(VariableExpession *exp) {
     llvm::AllocaInst *alloca = namedValues[exp->name];
     if (!alloca)
         return LogError("Unknown variable name");
     return Builder->CreateLoad(alloca, exp->name.c_str());
 }
 
-llvm::Value* CodeGenVisitor::Visit(BinaryExpression *exp) {
+llvm::Value* IRLLVMGenerationVisitor::Visit(BinaryExpression *exp) {
     llvm::Value *lhsValue = exp->lhs->Accept(this);
     llvm::Value *rhsValue = exp->rhs->Accept(this);
     if (!lhsValue || !rhsValue)
@@ -38,7 +38,7 @@ llvm::Value* CodeGenVisitor::Visit(BinaryExpression *exp) {
     }
 }
 
-llvm::Value* CodeGenVisitor::Visit(AssignExpression *exp) {
+llvm::Value* IRLLVMGenerationVisitor::Visit(AssignExpression *exp) {
     llvm::Value *assignValue = exp->expr->Accept(this);
     if (!assignValue)
         return nullptr;
@@ -54,7 +54,7 @@ llvm::Value* CodeGenVisitor::Visit(AssignExpression *exp) {
 }
 
 
-llvm::Value* CodeGenVisitor::Visit(IfExpression *exp) {
+llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
     llvm::Value *CondV = exp->conditionExp->Accept(this);
     if (!CondV)
         return nullptr;
@@ -109,7 +109,7 @@ llvm::Value* CodeGenVisitor::Visit(IfExpression *exp) {
 }
 
 
-llvm::Value* CodeGenVisitor::Visit(ForExpression *exp) {
+llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
     
@@ -183,7 +183,7 @@ llvm::Value* CodeGenVisitor::Visit(ForExpression *exp) {
     return llvm::Constant::getNullValue(llvm::Type::getInt32Ty(*TheContext));
 }
 
-llvm::Value* CodeGenVisitor::LogError(const char *Str) {
+llvm::Value* IRLLVMGenerationVisitor::LogError(const char *Str) {
     fprintf(stderr, "Error: %s\n", Str);
     return nullptr;
 }

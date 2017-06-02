@@ -42,7 +42,7 @@ public:
     virtual llvm::Value* Visit(BinaryExpression *exp) = 0;
 };
 
-class CodeGenVisitor : public ExprVisitor {
+class IRLLVMGenerationVisitor : public ExprVisitor {
 public:
     virtual llvm::Value* Visit(NumberExpression *exp) override;
     virtual llvm::Value* Visit(VariableExpession *exp) override;
@@ -51,7 +51,7 @@ public:
     virtual llvm::Value* Visit(IfExpression *exp) override;
     virtual llvm::Value* Visit(ForExpression *exp) override;
     virtual llvm::Value* Visit(BinaryExpression *exp) override;
-    CodeGenVisitor(llvm::LLVMContext *TheContext,
+    IRLLVMGenerationVisitor(llvm::LLVMContext *TheContext,
                    llvm::IRBuilder<> *Builder) : TheContext(TheContext), Builder(Builder){};
     
 private:
