@@ -21,5 +21,12 @@ std::string BranchInstruction::Dump() {
     } else {
         return "branch to: " + firstBranchBB->stringValue();
     }
-    
+}
+
+std::string PhiInstruction::Dump() {
+    std::string argEnumeration;
+    for (auto arg : bbToVarMap) {
+        argEnumeration += arg.second->name + " " + arg.first->stringValue() + "; ";
+    }
+    return var->name + " = [" + argEnumeration + "]";
 }

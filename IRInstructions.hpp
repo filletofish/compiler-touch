@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string>
+#include <map>
 
 class AbstractExpression;
 class NumberExpression;
@@ -60,5 +61,14 @@ public:
     BranchInstruction (BasicBlock *bb) : BranchInstruction(nullptr, bb, nullptr, false) {};
 };
 
+
+class PhiInstruction: public AbstractInstruction {
+public:
+    VariableExpession *var;
+    std::map<BasicBlock *, VariableExpession *> bbToVarMap;
+    std::string Dump() override;
+    PhiInstruction (VariableExpession *var, std::map<BasicBlock *, VariableExpession *> bbToVarMap) : bbToVarMap(bbToVarMap), var(var), AbstractInstruction(PHI) {};
+    
+};
 
 #endif /* IRInstructions_hpp */
