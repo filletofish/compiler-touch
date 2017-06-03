@@ -28,6 +28,7 @@ public:
     std::vector<AbstractInstruction *> instructions;
     std::vector<BasicBlock *> succs;
     std::vector<BasicBlock *> preds;
+    BasicBlock *dominator;
 
     void AddInstruction(AbstractInstruction *instruction);
     static void AddLink(BasicBlock *pred, BasicBlock *succ);

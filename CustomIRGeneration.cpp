@@ -81,6 +81,7 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     
     BasicBlock *loopCoonditionBB = CreateBB();
     BasicBlock::AddLink(currentBB, loopCoonditionBB);
+    currentBB->AddInstruction(new BranchInstruction(loopCoonditionBB));
     currentBB = loopCoonditionBB;
     
     // Compute the end condition.
@@ -150,7 +151,14 @@ void CustomIRGenerationVisitor::Dump() {
         
         string preds_enumeration = "";
         for (auto const &s : bb->preds) { preds_enumeration += s->stringValue() + " "; }
-        printf("\n%s\n\t\tpreds: %s\n\t\tsuccs: %s\n", bb->stringValue().c_str(), preds_enumeration.c_str(), succs_enumeration.c_str());
+        
+        string dominator;
+        if (bb->dominator) {
+            dominator = bb->dominator->stringValue();
+        } else {
+            dominator = "";
+        }
+        printf("\n%s\n\t\tpreds: %s\n\t\tsuccs: %s\n\t\tdominatedBy: %s\n", bb->stringValue().c_str(), preds_enumeration.c_str(), succs_enumeration.c_str(), dominator.c_str());
 
         for (auto it = bb->instructions.begin(); it != bb->instructions.end(); ++it) {
             printf("\t%s\n", (*it)->Dump().c_str());
