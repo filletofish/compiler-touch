@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <vector>
 #include <map>
+#include <set>
 
 class BasicBlock;
 
@@ -20,17 +21,23 @@ private:
     std::vector<BasicBlock *>* _bbInPredOrder;
     std::vector<BasicBlock *>* _bbInPostOrder;
     std::map<BasicBlock *, int> _bbVisitedMap;
+    std::map<BasicBlock *, std::vector<BasicBlock *>> _bbChildrenMap;
+    std::map<BasicBlock *, std::set<BasicBlock *>>* _dominanceFrontier;
+
     
     
     void PredOrderDFS(BasicBlock *bb);
     void PostOrderDFS(BasicBlock *bb);
     void DomDFS(BasicBlock *bb);
+    std::set<BasicBlock *> GetMergedDominanceFrontierFromSubSet(std::set<BasicBlock *> subSet);
 public:
     
     std::vector<BasicBlock *> basicBlocks;
+    std::set<BasicBlock *> GetDominanceFrontierForSubSet(std::set<BasicBlock *> subSet);
     void ComputePredOrder();
     void ComputePostOrder();
     void ComputeDomTree();
+    void ComputeBaseDominanceFrontier();
     void AddBasicBlock(BasicBlock *bb);
 };
 #endif /* ControlFlowGraph_hpp */

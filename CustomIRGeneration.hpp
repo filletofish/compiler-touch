@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
+#include <set>
 
 class NumberExpression;
 class VariableExpession;
@@ -25,6 +26,8 @@ class BasicBlock;
 
 
 class CustomIRGenerationVisitor {
+private:
+    std::map<std::string, std::set<BasicBlock *>> bblocksForVar;
 public:
     int Visit(NumberExpression *exp);
     int Visit(VariableExpession *exp);
@@ -34,6 +37,7 @@ public:
     int Visit(ForExpression *exp);
     int Visit(BinaryExpression *exp);
     
+    void InsertPhiNodes();
     void Dump();
     CustomIRGenerationVisitor(ControlFlowGraph *cfg);
     

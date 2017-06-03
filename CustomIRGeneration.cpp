@@ -39,6 +39,7 @@ int CustomIRGenerationVisitor::Visit(VariableExpession *exp) {
 }
 
 int CustomIRGenerationVisitor::Visit(AssignExpression *exp) {
+    bblocksForVar[exp->varExp->name].insert(currentBB);
     int assignValue = exp->expr->Accept(this);
     namedValues[exp->varName()] = &assignValue;
     currentBB->AddInstruction(new AssignInstruction(exp->varExp, exp->expr));
@@ -71,6 +72,7 @@ int CustomIRGenerationVisitor::Visit(IfExpression *exp) {
 }
 
 int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
+    bblocksForVar[exp->index->name].insert(currentBB);
     // Emit the start code first, without 'variable' in scope.
     int startVal = exp->start->Accept(this);
     
@@ -104,6 +106,7 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     exp->body->Accept(this);
     
     // MARK: Make pseudo step it in expression
+    bblocksForVar[exp->index->name].insert(currentBB);
     BinaryExpression *pseudoStepExp = new BinaryExpression('+', exp->index, new NumberExpression(1));
     currentBB->AddInstruction(new AssignInstruction(exp->index, pseudoStepExp));
     currentBB->AddInstruction(new BranchInstruction(loopCoonditionBB));
@@ -163,6 +166,25 @@ void CustomIRGenerationVisitor::Dump() {
         for (auto it = bb->instructions.begin(); it != bb->instructions.end(); ++it) {
             printf("\t%s\n", (*it)->Dump().c_str());
         }
+    }
+}
 
+
+// MARK: Phi Nodes
+
+void CustomIRGenerationVisitor::InsertPhiNodes() {
+    for (auto it : bblocksForVar) {
+        std::string variableName = it.first;
+        std::set<BasicBlock *> assignedInBlocks = it.second;
+        std::set<BasicBlock *> dominanceFrontier = cfg->GetDominanceFrontierForSubSet(assignedInBlocks);
+        for (auto bb : dominanceFrontier) {
+            std::map<BasicBlock *, VariableExpession *> bbToVarMap;
+        
+            for (auto pred : bb->preds) {
+                bbToVarMap[pred] = new VariableExpession(variableName);
+            }
+            PhiInstruction *phiInstr = new PhiInstruction(new VariableExpession(variableName), bbToVarMap);
+            bb->instructions.insert(bb->instructions.begin(), phiInstr);
+        }
     }
 }

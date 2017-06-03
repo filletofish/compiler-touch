@@ -9,6 +9,8 @@
 
 #include "ControlFlowGraph.hpp"
 #include "BasicBlock.hpp"
+#include <set>
+
 
 using namespace std;
 
@@ -47,6 +49,7 @@ void ControlFlowGraph::PostOrderDFS(BasicBlock *bb) {
 void ControlFlowGraph::ComputeDomTree() {
     if (!_bbInPredOrder) ComputePredOrder();
     
+    // compute dominators
     for (auto it : *_bbInPredOrder) {
         _bbVisitedMap.clear();
         _bbVisitedMap[it] = 1;
@@ -57,6 +60,14 @@ void ControlFlowGraph::ComputeDomTree() {
             }
         }
     }
+    
+    // compute chilrenMap 
+    for (auto v : basicBlocks) {
+        BasicBlock *dominator = v->dominator;
+        if (dominator) {
+            _bbChildrenMap[dominator].push_back(v);
+        }
+    }
 }
 
 void ControlFlowGraph::DomDFS(BasicBlock *bb) {
@@ -64,5 +75,54 @@ void ControlFlowGraph::DomDFS(BasicBlock *bb) {
         _bbVisitedMap[bb] = 1;
         for (auto next : bb->succs) { if (!_bbVisitedMap[next]) DomDFS(next);}
     }
+}
+
+//set<BasicBlock *> s
+void ControlFlowGraph::ComputeBaseDominanceFrontier() {
+    if (_dominanceFrontier) { return;}
+    _dominanceFrontier = new map<BasicBlock *, set<BasicBlock *>>;
+    for (auto v : basicBlocks) {
+        _dominanceFrontier->insert(pair<BasicBlock *, set<BasicBlock *>>(v, set<BasicBlock *>()));
+    }
+    for (auto x : *_bbInPostOrder) {
+        for (auto y : x->succs) {
+            if (y->dominator != x)
+                _dominanceFrontier->at(x).insert(y);
+        }
+        
+        for (auto z : _bbChildrenMap[x]) {
+            for (auto y : _dominanceFrontier->at(z)) {
+                if (y->dominator != x)
+                    _dominanceFrontier->at(x).insert(y);
+            }
+        }
+    }
+}
+
+set<BasicBlock *> ControlFlowGraph::GetMergedDominanceFrontierFromSubSet(set<BasicBlock *> subSet) {
+    set<BasicBlock *> mergedDF;
+    for (auto v : subSet) {
+        set<BasicBlock *> df = _dominanceFrontier->at(v);
+        mergedDF.insert(df.begin(), df.end());
+    }
+    return mergedDF;
+}
+
+set<BasicBlock *> ControlFlowGraph::GetDominanceFrontierForSubSet(std::set<BasicBlock *> subSet) {
+    set<BasicBlock *> result;
+    set<BasicBlock *> dfp;
+    bool hasChanged = true;
+    dfp = GetMergedDominanceFrontierFromSubSet(subSet);
+    while (hasChanged) {
+        hasChanged = false;
+        dfp.insert(subSet.begin(), subSet.end());
+        dfp = GetMergedDominanceFrontierFromSubSet(dfp);
+        if (result != dfp) {
+            result = dfp;
+            hasChanged = true;
+        }
+    }
+    
+    return  result;
 }
 
