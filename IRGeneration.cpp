@@ -74,12 +74,21 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
     
     Builder->CreateCondBr(CondV, ThenBB, ElseBB);
     
+    // creating temp variable for storing return value
+    std::string temp_varName = "temp_var";
+    llvm::AllocaInst *tempVarAlloca = Builder->CreateAlloca(llvm::Type::getInt32Ty(*TheContext), 0, "temp_var");
+    
+    
+    
     // Генерируем значение.
     Builder->SetInsertPoint(ThenBB);
     
     llvm::Value *ThenV = exp->thenExp->Accept(this);
     if (!ThenV)
+    
         return nullptr;
+
+    Builder->CreateStore(ThenV, tempVarAlloca);
     
     Builder->CreateBr(MergeBB);
     // Кодогенерация 'Then' может изменить текущий блок, обновляем ThenBB для PHI.
@@ -93,6 +102,7 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
     if (!ElseV)
         return nullptr;
     
+    Builder->CreateStore(ElseV, tempVarAlloca);
     Builder->CreateBr(MergeBB);
     // Кодогенерация 'Else' может изменить текущий блок, обновляем ElseBB для PHI.
     // codegen of 'Else' can change the current block, update ElseBB for the PHI.
@@ -102,12 +112,10 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
     TheFunction->getBasicBlockList().push_back(MergeBB);
     Builder->SetInsertPoint(MergeBB);
     
-    // returning phiNode for returning some value from IF expression
-    llvm::PHINode *PN = Builder->CreatePHI(llvm::Type::getInt32Ty(*TheContext), 2, "iftmp");
+    llvm::Value *resultValue = Builder->CreateLoad(tempVarAlloca, "temp_var");
     
-    PN->addIncoming(ThenV, ThenBB);
-    PN->addIncoming(ElseV, ElseBB);
-    return PN;
+    // returning phiNode for returning some value from IF expression
+    return resultValue;
 }
 
 
