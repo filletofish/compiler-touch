@@ -29,6 +29,7 @@ class AbstractExpression;
 class AbstractStatement;
 class BranchStatement;
 class AssignStatement;
+class GraphVizPrinter;
 
 
 class IRGenerator : public AbstractVisitor {
@@ -47,7 +48,21 @@ public:
     virtual void Visit(AssignStatement *stmt) override {};
     
     int GenerateIR(AbstractExpression *exp);
+    
+    
+    /**
+     *  Dumps all IR in stdout.
+     *  Should be called after all IR Generated.
+     */
     void CommitBuildingAndDump();
+    
+    /**
+     Creates new GraphVizPrinter to present control flow graph in graphviz notation.
+
+     @return instanse of GraphVizPrinter
+     */
+    GraphVizPrinter GetGraphVizPrinter();
+    
     IRGenerator();
     
 private:

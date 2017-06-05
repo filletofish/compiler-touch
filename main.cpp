@@ -30,7 +30,8 @@
 #include "LLVMIRGenerator.hpp"
 #include "Expressions.hpp"
 #include "IRGenerator.hpp"
-#include "ControlFlowGraph.hpp"
+#include "GraphVizPrinter.hpp"
+
 
 
 using namespace llvm;
@@ -81,6 +82,7 @@ int main(int argc, const char * argv[]) {
         
         
         irGenerator.CommitBuildingAndDump();
+        irGenerator.GetGraphVizPrinter().print();
     }
     
     return 0;
