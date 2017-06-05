@@ -11,38 +11,48 @@
 
 #include <stdio.h>
 #include <string>
-#include "IRGeneration.hpp"
-class ExprVisitor;
+#include "AbstractVisitor.hpp"
+
 class Value;
 namespace llvm {};
 
 class AbstractExpression {
 public:
+    virtual std::string stringValue() {return "";};
+    
     virtual ~AbstractExpression() = default;
-    virtual llvm::Value* Accept(ExprVisitor * visitor) = 0;
+    virtual void Accept(AbstractVisitor * visitor) = 0;
 };
 
 class NumberExpression : public AbstractExpression {
 public:
     int value;
-    NumberExpression(int value) : value(value) {}
-    llvm::Value* Accept(ExprVisitor *visitor) override { return visitor->Visit(this);}
+    std::string stringValue() override { return std::to_string(value); }
+    NumberExpression(int value) : value(value) {};
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 
 class VariableExpession : public AbstractExpression {
+private:
+    int _SSAIndex;
 public:
     std::string name;
-    VariableExpession(const std::string &name) : name(name) {}
-    llvm::Value* Accept(ExprVisitor *visitor) override { return visitor->Visit(this);}
+    void SetSSAIndex(int index) { _SSAIndex = index; };
+    std::string stringValue() override { return name + "_" + std::to_string(_SSAIndex); }
+    
+    VariableExpession(const std::string &name) : name(name), _SSAIndex(0) {}
+    
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 
 class AssignExpression : public AbstractExpression {
 public:
-    std::string varName;
+    std::string varName() { return varExp ->name; };
     AbstractExpression *expr;
+    VariableExpession *varExp;
     
-    AssignExpression(const std::string &varName, AbstractExpression *expr): varName(varName),expr(expr) {}
-    llvm::Value* Accept(ExprVisitor *visitor) override { return visitor->Visit(this);}
+    AssignExpression(VariableExpession *varExp, AbstractExpression *expr): varExp(varExp),expr(expr) {}
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 
 class IfExpression : public AbstractExpression {
@@ -50,24 +60,27 @@ public:
     AbstractExpression *conditionExp, *thenExp, *elseExp;
 
     IfExpression(AbstractExpression *conditionExp, AbstractExpression *thenExp, AbstractExpression *elseExp): conditionExp(conditionExp), thenExp(thenExp), elseExp(elseExp)  {}
-    llvm::Value* Accept(ExprVisitor *visitor) override { return visitor->Visit(this);}
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 
 class ForExpression: public AbstractExpression {
 public:
-    std::string indexName;
+    VariableExpession *index;
     AbstractExpression *start, *end, *step, *body;
     
-    ForExpression(std::string indexName, AbstractExpression *start, AbstractExpression *end, AbstractExpression *step, AbstractExpression *body): indexName(indexName),start(start), end(end), step(step), body(body) {}
-    llvm::Value* Accept(ExprVisitor *visitor) override { return visitor->Visit(this);}
+    ForExpression(std::string indexName, AbstractExpression *start, AbstractExpression *end, AbstractExpression *step, AbstractExpression *body): index(new VariableExpession(indexName)), start(start), end(end), step(step), body(body) {}
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 
 class BinaryExpression: public AbstractExpression {
 public:
     char op;
     AbstractExpression *lhs, *rhs;
+    std::string stringValue() override { return lhs->stringValue() + " " + op + " " + rhs->stringValue(); };
+
+    
     BinaryExpression(char op, AbstractExpression *lhs, AbstractExpression *rhs): op(op), lhs(lhs), rhs(rhs) {}
-    llvm::Value* Accept(ExprVisitor *visitor) override { return  visitor->Visit(this);}
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 #endif /* AbstractExpresssion_hpp */
 

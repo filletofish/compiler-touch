@@ -21,6 +21,8 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 
+#include "AbstractVisitor.hpp"
+
 #include <stdio.h>
 #include <string>
 #include <algorithm>
@@ -31,35 +33,33 @@ class AssignExpression;
 class IfExpression;
 class ForExpression;
 class BinaryExpression;
+class AbstractExpression;
+class ControlFlowGraph;
+class BasicBlock;
 
-class ExprVisitor {
+class LLVMIRGenerator : public AbstractVisitor {
 public:
-    virtual llvm::Value* Visit(NumberExpression *exp) = 0;
-    virtual llvm::Value* Visit(VariableExpession *exp) = 0;
-    virtual llvm::Value* Visit(AssignExpression *exp) = 0;
-    virtual llvm::Value* Visit(IfExpression *exp) = 0;
-    virtual llvm::Value* Visit(ForExpression *exp) = 0;
-    virtual llvm::Value* Visit(BinaryExpression *exp) = 0;
-};
-
-class CodeGenVisitor : public ExprVisitor {
-public:
-    virtual llvm::Value* Visit(NumberExpression *exp) override;
-    virtual llvm::Value* Visit(VariableExpession *exp) override;
-    virtual llvm::Value* Visit(AssignExpression *exp) override;
-    /// generates IR for if condition
-    virtual llvm::Value* Visit(IfExpression *exp) override;
-    virtual llvm::Value* Visit(ForExpression *exp) override;
-    virtual llvm::Value* Visit(BinaryExpression *exp) override;
-    CodeGenVisitor(llvm::LLVMContext *TheContext,
+    void Visit(NumberExpression *exp) override;
+    void Visit(VariableExpession *exp) override;
+    void Visit(AssignExpression *exp) override;
+    void Visit(IfExpression *exp) override;
+    void Visit(ForExpression *exp) override;
+    void Visit(BinaryExpression *exp) override;
+    
+    // not implemented, because visits only expressions
+    virtual void Visit(BranchStatement *stmt) override {};
+    virtual void Visit(AssignStatement *stmt) override {};
+    
+    llvm::Value* GenerateIR(AbstractExpression *exp);
+    
+    LLVMIRGenerator(llvm::LLVMContext *TheContext,
                    llvm::IRBuilder<> *Builder) : TheContext(TheContext), Builder(Builder){};
     
 private:
+    llvm::Value* _latestValue;
     llvm::LLVMContext *TheContext;
     llvm::IRBuilder<> *Builder;
     std::map<std::string, llvm::AllocaInst *> namedValues;    
-    llvm::Value* LogError(const char*);
+    void LogError(const char*);
 };
-
-
 #endif /* CodeGenVisitor_hpp */
