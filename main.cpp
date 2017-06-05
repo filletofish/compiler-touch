@@ -25,12 +25,12 @@
 #include <string>
 #include <vector>
 
-#include "Parser.hpp"
-#include "Lexer.hpp"
-#include "LLVMIRGenerator.hpp"
-#include "Expressions.hpp"
-#include "IRGenerator.hpp"
-#include "GraphVizPrinter.hpp"
+#include "Parser/Parser.hpp"
+#include "Lexer/Lexer.hpp"
+#include "IRGeneration/LLVMIRGenerator.hpp"
+#include "Parser/Expressions.hpp"
+#include "IRGeneration/IRGenerator.hpp"
+#include "IRGeneration/GraphVizPrinter.hpp"
 
 
 

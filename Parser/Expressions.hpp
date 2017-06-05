@@ -11,7 +11,7 @@
 
 #include <stdio.h>
 #include <string>
-#include "AbstractVisitor.hpp"
+#include "../IRGeneration/AbstractVisitor.hpp"
 
 class Value;
 namespace llvm {};

@@ -19,7 +19,7 @@ Token * Lexer::GetToken() {
     std::string identifier;
     
     while (isspace(lastChar))
-        lastChar = getchar();
+        lastChar = getchar(); 
     
     if (isalpha(lastChar)) {
         identifier = lastChar;

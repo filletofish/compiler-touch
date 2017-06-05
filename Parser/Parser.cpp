@@ -8,8 +8,8 @@
 
 #include "Parser.hpp"
 #include "Expressions.hpp"
-#include "Lexer.hpp"
-#include "Token.hpp"
+#include "../Lexer/Lexer.hpp"
+#include "../Lexer/Token.hpp"
 
 #include <string>
 

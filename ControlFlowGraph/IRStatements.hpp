@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
-#include "AbstractVisitor.hpp"
+#include "../IRGeneration/AbstractVisitor.hpp"
 
 class AbstractExpression;
 class NumberExpression;

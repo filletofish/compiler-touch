@@ -7,8 +7,8 @@
 //
 
 #include "GraphVizPrinter.hpp"
-#include "ControlFlowGraph.hpp"
-#include "BasicBlock.hpp"
+#include "../ControlFlowGraph/ControlFlowGraph.hpp"
+#include "../ControlFlowGraph/BasicBlock.hpp"
 
 void GraphVizPrinter::print() {
     printf("digraph G {\n");

@@ -7,9 +7,9 @@
 //
 
 #include "LLVMIRGenerator.hpp"
-#include "Expressions.hpp"
-#include "ControlFlowGraph.hpp"
-#include "BasicBlock.hpp"
+#include "../Parser/Expressions.hpp"
+#include "../ControlFlowGraph/ControlFlowGraph.hpp"
+#include "../ControlFlowGraph/BasicBlock.hpp"
 
 using namespace llvm;
 

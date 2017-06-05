@@ -7,10 +7,10 @@
 //
 
 #include "IRGenerator.hpp"
-#include "BasicBlock.hpp"
-#include "Expressions.hpp"
-#include "IRStatements.hpp"
-#include "ControlFlowGraph.hpp"
+#include "../Parser/Expressions.hpp"
+#include "../ControlFlowGraph/ControlFlowGraph.hpp"
+#include "../ControlFlowGraph/BasicBlock.hpp"
+#include "../ControlFlowGraph/IRStatements.hpp"
 #include "GraphVizPrinter.hpp"
 
 #include <assert.h> 
