@@ -11,6 +11,7 @@
 #include "Expressions.hpp"
 #include "IRStatements.hpp"
 #include "ControlFlowGraph.hpp"
+#include <assert.h> 
 
 using namespace std;
 
@@ -40,26 +41,31 @@ void CustomIRGenerationVisitor::CreateConditionalBr(AbstractExpression *conditio
     currentBB->AddStatement(branchStmt);
 }
 
-int CustomIRGenerationVisitor::Visit(NumberExpression *exp) {
-    return exp->value;
+int CustomIRGenerationVisitor::GenerateIR(AbstractExpression *exp) {
+    exp->Accept(this);
+    return _latestValue;
 }
 
-int CustomIRGenerationVisitor::Visit(VariableExpession *exp) {
+void CustomIRGenerationVisitor::Visit(NumberExpression *exp) {
+    _latestValue = exp->value;
+}
+
+void CustomIRGenerationVisitor::Visit(VariableExpession *exp) {
     int* value = namedValues[exp->name];
     if (!value)
         return LogError("Unknown variable name");
-    return *value;
+    _latestValue = *value;
 }
 
-int CustomIRGenerationVisitor::Visit(AssignExpression *exp) {
+void CustomIRGenerationVisitor::Visit(AssignExpression *exp) {
     bblocksForVar[exp->varExp->name].insert(currentBB);
-    int assignValue = exp->expr->Accept(this);
+    int assignValue = GenerateIR(exp->expr);
     namedValues[exp->varName()] = &assignValue;
     currentBB->AddStatement(new AssignStatement(exp->varExp, exp->expr));
-    return assignValue;
+    _latestValue = assignValue;
 }
 
-int CustomIRGenerationVisitor::Visit(IfExpression *exp) {
+void CustomIRGenerationVisitor::Visit(IfExpression *exp) {
     BasicBlock *thenBB = CreateBB("then");
     BasicBlock *elseBB = CreateBB("else");
     BasicBlock *mergeBB = CreateBB("if_cont");
@@ -67,24 +73,24 @@ int CustomIRGenerationVisitor::Visit(IfExpression *exp) {
     CreateConditionalBr(exp->conditionExp, elseBB, thenBB);
     
     currentBB = thenBB;
-    exp->thenExp->Accept(this);
+    GenerateIR(exp->thenExp);
     CreateBr(mergeBB);
     
     currentBB = elseBB;
-    exp->elseExp->Accept(this);
+    GenerateIR(exp->elseExp);
     CreateBr(mergeBB);
     
     currentBB = mergeBB;
     
-    return 0;
+    _latestValue = 0;
 }
 
-int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
+void CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     // TODO: Refactor to make less pseudo steps and to copy var instead of creating new
     
     bblocksForVar[exp->index->name].insert(currentBB);
     // Emit the start code first, without 'variable' in scope.
-    int startVal = exp->start->Accept(this);
+    int startVal = GenerateIR(exp->start);
     VariableExpession *pseudoVarForStart = new VariableExpession(exp->index->name);
     currentBB->AddStatement(new AssignStatement(pseudoVarForStart, exp->start));
 
@@ -100,7 +106,7 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
 
     // Compute the end condition.
     bblocksForVar[exp->index->name].insert(currentBB);
-    exp->end->Accept(this);
+    GenerateIR(exp->end);
     // Make the new basic block for the loop body
     BasicBlock *loopBodyBB = CreateBB("loop_body");
     BasicBlock *loopAfterBB = CreateBB("loop_cont");
@@ -115,7 +121,7 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     // Emit the body of the loop.  This, like any other expr, can change the
     // current BB.  Note that we ignore the value computed by the body, but don't
     // allow an error.
-    exp->body->Accept(this);
+    GenerateIR(exp->body);
     
     // MARK: Make pseudo step it in expression
     bblocksForVar[exp->index->name].insert(currentBB);
@@ -134,26 +140,30 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
         namedValues.erase(exp->index->name);
     
     // for expr always returns 0.
-    return 0;
+    _latestValue = 0;
 }
 
-int CustomIRGenerationVisitor::Visit(BinaryExpression *exp) {
-    int lhsValue = exp->lhs->Accept(this);
-    int rhsValue = exp->rhs->Accept(this);
+void CustomIRGenerationVisitor::Visit(BinaryExpression *exp) {
+    
+    int lhsValue = GenerateIR(exp->lhs);
+    int rhsValue = GenerateIR(exp->rhs);
     
     switch (exp->op) {
         case '+':
-            return lhsValue + rhsValue;
+            _latestValue = lhsValue + rhsValue;
+            return;
         case '-':
-            return lhsValue - rhsValue;
+            _latestValue = lhsValue - rhsValue;
+            return;
         default:
-            return LogError("invalid binary operator");
+            LogError("invalid binary operator");
+            return;
     };
 }
 
-int CustomIRGenerationVisitor::LogError(const char * str) {
+void CustomIRGenerationVisitor::LogError(const char * str) {
     fprintf(stderr, "Error: %s\n", str);
-    return 0;
+    _latestValue = 0;
 }
 
 

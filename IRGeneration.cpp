@@ -13,37 +13,46 @@
 
 using namespace llvm;
 
-llvm::Value* IRLLVMGenerationVisitor::Visit(NumberExpression *exp){
-    return ConstantInt::get(*TheContext, APInt(32, exp->value, false));
+llvm::Value* IRLLVMGenerationVisitor::GenerateIR(AbstractExpression *exp) {
+    exp->Accept(this);
+    return _latestValue;
 }
 
-llvm::Value* IRLLVMGenerationVisitor::Visit(VariableExpession *exp) {
+void IRLLVMGenerationVisitor::Visit(NumberExpression *exp){
+    _latestValue = ConstantInt::get(*TheContext, APInt(32, exp->value, false));
+}
+
+void IRLLVMGenerationVisitor::Visit(VariableExpession *exp) {
     llvm::AllocaInst *alloca = namedValues[exp->name];
-    if (!alloca)
-        return LogError("Unknown variable name");
-    return Builder->CreateLoad(alloca, exp->name.c_str());
+    if (!alloca) {
+        LogError("Unknown variable name");
+        return;
+    }
+    _latestValue = Builder->CreateLoad(alloca, exp->name.c_str());
 }
 
-llvm::Value* IRLLVMGenerationVisitor::Visit(BinaryExpression *exp) {
-    llvm::Value *lhsValue = exp->lhs->Accept(this);
-    llvm::Value *rhsValue = exp->rhs->Accept(this);
+void IRLLVMGenerationVisitor::Visit(BinaryExpression *exp) {
+    llvm::Value *lhsValue = GenerateIR(exp->lhs);
+    llvm::Value *rhsValue = GenerateIR(exp->rhs);
     if (!lhsValue || !rhsValue)
-        return nullptr;
+        return;
     
     switch (exp->op) {
         case '+':
-            return Builder->CreateFAdd(lhsValue, rhsValue, "addtmp");
+            _latestValue = Builder->CreateFAdd(lhsValue, rhsValue, "addtmp");
+            return;
         case '-':
-            return Builder->CreateFSub(lhsValue, rhsValue, "subtmp");
+            _latestValue = Builder->CreateFSub(lhsValue, rhsValue, "subtmp");
+            return;
         default:
             return LogError("invalid binary operator");
     }
 }
 
-llvm::Value* IRLLVMGenerationVisitor::Visit(AssignExpression *exp) {
-    llvm::Value *assignValue = exp->expr->Accept(this);
+void IRLLVMGenerationVisitor::Visit(AssignExpression *exp) {
+    llvm::Value *assignValue = GenerateIR(exp->expr);
     if (!assignValue)
-        return nullptr;
+        return;
     if (namedValues.count(exp->varName()) != 0) {
         llvm::AllocaInst *Alloca = namedValues[exp->varName()];
         Builder->CreateStore(assignValue, Alloca);
@@ -52,14 +61,14 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(AssignExpression *exp) {
         Builder->CreateStore(assignValue, Alloca);
         namedValues[exp->varName()] = Alloca;
     }
-    return assignValue;
+    _latestValue = assignValue;
 }
 
 
-llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
-    llvm::Value *CondV = exp->conditionExp->Accept(this);
+void IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
+    llvm::Value *CondV = GenerateIR(exp->conditionExp);
     if (!CondV)
-        return nullptr;
+        return;
     
     CondV = Builder->CreateICmpNE(
                                  CondV, llvm::ConstantInt::get(*TheContext, llvm::APInt(32,0,false)), "ifcond");
@@ -83,10 +92,10 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
     // Генерируем значение.
     Builder->SetInsertPoint(ThenBB);
     
-    llvm::Value *ThenV = exp->thenExp->Accept(this);
+    llvm::Value *ThenV = GenerateIR(exp->thenExp);
     if (!ThenV)
     
-        return nullptr;
+        return;
 
     Builder->CreateStore(ThenV, tempVarAlloca);
     
@@ -98,9 +107,9 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
     TheFunction->getBasicBlockList().push_back(ElseBB);
     Builder->SetInsertPoint(ElseBB);
     
-    llvm::Value *ElseV = exp->elseExp->Accept(this);
+    llvm::Value *ElseV = GenerateIR(exp->elseExp);
     if (!ElseV)
-        return nullptr;
+        return;
     
     Builder->CreateStore(ElseV, tempVarAlloca);
     Builder->CreateBr(MergeBB);
@@ -114,12 +123,11 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
     
     llvm::Value *resultValue = Builder->CreateLoad(tempVarAlloca, "temp_var");
     
-    // returning phiNode for returning some value from IF expression
-    return resultValue;
+    _latestValue = resultValue;
 }
 
 
-llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
+void IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
     
@@ -127,9 +135,9 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     AllocaInst *Alloca =Builder->CreateAlloca(llvm::Type::getInt32Ty(*TheContext), 0, exp->index->name.c_str());
     
     // Emit the start code first, without 'variable' in scope.
-    llvm::Value *StartVal = exp->start->Accept(this);
+    llvm::Value *StartVal = GenerateIR(exp->start);
     if (!StartVal)
-        return nullptr;
+        return;
     
     // Store the value into the alloca.
     Builder->CreateStore(StartVal, Alloca);
@@ -142,9 +150,9 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     Builder->SetInsertPoint(loopCoonditionBB);
 
     // Compute the end condition.
-    llvm::Value *EndCond = exp->end->Accept(this);
+    llvm::Value *EndCond = GenerateIR(exp->end);
     if (!EndCond)
-        return nullptr;
+        return;
     
     llvm::Value *CurVar = Builder->CreateLoad(Alloca, exp->index->name.c_str());
     EndCond = Builder->CreateICmpSLT(CurVar, EndCond, "loopcond");
@@ -161,14 +169,14 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     // Emit the body of the loop.  This, like any other expr, can change the
     // current BB.  Note that we ignore the value computed by the body, but don't
     // allow an error.
-    if (!exp->body->Accept(this))
-        return nullptr;
+    if (!GenerateIR(exp->body))
+        return;
     // Emit the step value.
     llvm::Value *StepVal = nullptr;
     if (exp->step) {
-        StepVal = exp->step->Accept(this);
+        StepVal = GenerateIR(exp->step);
         if (!StepVal)
-            return nullptr;
+            return;
     } else {
         // If not specified, use 1.0.
         StepVal = llvm::ConstantInt::get(*TheContext, llvm::APInt(32, 1, false));
@@ -190,12 +198,12 @@ llvm::Value* IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
         namedValues.erase(exp->index->name);
     
     // for expr always returns 0.
-    return llvm::Constant::getNullValue(llvm::Type::getInt32Ty(*TheContext));
+    _latestValue = llvm::Constant::getNullValue(llvm::Type::getInt32Ty(*TheContext));
 }
 
-llvm::Value* IRLLVMGenerationVisitor::LogError(const char *Str) {
+void IRLLVMGenerationVisitor::LogError(const char *Str) {
     fprintf(stderr, "Error: %s\n", Str);
-    return nullptr;
+    _latestValue = nullptr;
 }
 
 

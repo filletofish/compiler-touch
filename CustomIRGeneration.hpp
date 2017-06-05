@@ -15,6 +15,8 @@
 #include <vector>
 #include <set>
 
+#include "AbstractVisitor.hpp"
+
 class NumberExpression;
 class VariableExpession;
 class AssignExpression;
@@ -29,24 +31,29 @@ class BranchStatement;
 class AssignStatement;
 
 
-class CustomIRGenerationVisitor {
+class CustomIRGenerationVisitor : public AbstractVisitor {
 private:
     std::map<std::string, std::set<BasicBlock *>> bblocksForVar;
 public:
-    int Visit(NumberExpression *exp);
-    int Visit(VariableExpession *exp);
-    int Visit(AssignExpression *exp);
-    /// generates IR for if condition
-    int Visit(IfExpression *exp);
-    int Visit(ForExpression *exp);
-    int Visit(BinaryExpression *exp);
+    void Visit(NumberExpression *exp) override;
+    void Visit(VariableExpession *exp) override;
+    void Visit(AssignExpression *exp) override;
+    void Visit(IfExpression *exp) override;
+    void Visit(ForExpression *exp) override;
+    void Visit(BinaryExpression *exp) override;
     
+    // not implemented, because visits only expressions
+    virtual void Visit(BranchStatement *stmt) override {};
+    virtual void Visit(AssignStatement *stmt) override {};
+    
+    int GenerateIR(AbstractExpression *exp);
     void InsertPhiNodes();
     void BuildSSAForm();
     void Dump();
     CustomIRGenerationVisitor(ControlFlowGraph *cfg);
     
 private:
+    int _latestValue;
     std::map<std::string, int*> namedValues;
     BasicBlock *currentBB;
     BasicBlock *entryBB;
@@ -54,21 +61,21 @@ private:
     void CreateBr(BasicBlock *targetBB);
     void CreateConditionalBr(AbstractExpression *condition, BasicBlock *thenBB, BasicBlock *elseBB);
     ControlFlowGraph *cfg;
-    int LogError(const char*);
+    void LogError(const char*);
 };
 
-class VarSearchVisitor {
+class VarSearchVisitor : public AbstractVisitor {
 private:
     std::set<VariableExpession *> vars;
 public:
-    void Visit(NumberExpression *exp);
-    void Visit(VariableExpession *exp);
-    void Visit(AssignExpression *exp);
-    void Visit(IfExpression *exp);
-    void Visit(ForExpression *exp);
-    void Visit(BinaryExpression *exp);
-    void Visit(BranchStatement *stmt);
-    void Visit(AssignStatement *stmt);
+    void Visit(NumberExpression *exp) override;
+    void Visit(VariableExpession *exp) override;
+    void Visit(AssignExpression *exp) override;
+    void Visit(IfExpression *exp) override;
+    void Visit(ForExpression *exp) override;
+    void Visit(BinaryExpression *exp) override;
+    virtual void Visit(BranchStatement *stmt) override;
+    virtual void Visit(AssignStatement *stmt) override;
     std::set<VariableExpession *> AllVarsUsedInStatement(AbstractStatement *statement);
 };
 

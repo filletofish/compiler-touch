@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
-#include "CustomIRGeneration.hpp"
+#include "AbstractVisitor.hpp"
 
 class AbstractExpression;
 class NumberExpression;
@@ -35,7 +35,7 @@ public:
     StatementType type;
     virtual std::string Dump() = 0;
     AbstractStatement(StatementType type) : type(type) {};
-    virtual void Accept(VarSearchVisitor * visitor) = 0;
+    virtual void Accept(AbstractVisitor * visitor) = 0;
 };
 
 
@@ -46,7 +46,7 @@ public:
     
     std::string Dump() override;
     AssignStatement(VariableExpession *var, AbstractExpression *rhs) : AbstractStatement(ASSIGN), var(var), rhs(rhs) {};
-    void Accept(VarSearchVisitor * visitor) override { return visitor->Visit(this);}
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 
 class BranchStatement: public AbstractStatement {
@@ -61,7 +61,7 @@ public:
     std::string Dump() override;
     BranchStatement (AbstractExpression *condition, BasicBlock *trueBranch, BasicBlock *falseBranch) : BranchStatement(condition, trueBranch, falseBranch, true) {};
     BranchStatement (BasicBlock *bb) : BranchStatement(nullptr, bb, nullptr, false) {};
-    void Accept(VarSearchVisitor * visitor) override { return visitor->Visit(this);}
+    void Accept(AbstractVisitor *visitor) override { visitor->Visit(this);}
 };
 
 
@@ -71,7 +71,7 @@ public:
     std::map<BasicBlock *, VariableExpession *> bbToVarMap;
     std::string Dump() override;
     PhiNodeStatement (VariableExpession *var, std::map<BasicBlock *, VariableExpession *> bbToVarMap) : bbToVarMap(bbToVarMap), var(var), AbstractStatement(PHI) {};
-    void Accept(VarSearchVisitor * visitor) override {}
+    void Accept(AbstractVisitor *visitor) override { }
 };
 
 #endif /* IRInstructions_hpp */

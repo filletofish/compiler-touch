@@ -21,6 +21,8 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 
+#include "AbstractVisitor.hpp"
+
 #include <stdio.h>
 #include <string>
 #include <algorithm>
@@ -31,25 +33,31 @@ class AssignExpression;
 class IfExpression;
 class ForExpression;
 class BinaryExpression;
+class AbstractExpression;
 class ControlFlowGraph;
 class BasicBlock;
 
-class IRLLVMGenerationVisitor {
+class IRLLVMGenerationVisitor : public AbstractVisitor {
 public:
-    llvm::Value* Visit(NumberExpression *exp);
-    llvm::Value* Visit(VariableExpession *exp);
-    llvm::Value* Visit(AssignExpression *exp);
-    /// generates IR for if condition
-    llvm::Value* Visit(IfExpression *exp);
-    llvm::Value* Visit(ForExpression *exp);
-    llvm::Value* Visit(BinaryExpression *exp);
+    void Visit(NumberExpression *exp) override;
+    void Visit(VariableExpession *exp) override;
+    void Visit(AssignExpression *exp) override;
+    void Visit(IfExpression *exp) override;
+    void Visit(ForExpression *exp) override;
+    void Visit(BinaryExpression *exp) override;
+    
+    // not implemented, because visits only expressions
+    virtual void Visit(BranchStatement *stmt) override {};
+    virtual void Visit(AssignStatement *stmt) override {};
+    llvm::Value* GenerateIR(AbstractExpression *exp);
     IRLLVMGenerationVisitor(llvm::LLVMContext *TheContext,
                    llvm::IRBuilder<> *Builder) : TheContext(TheContext), Builder(Builder){};
     
 private:
+    llvm::Value* _latestValue;
     llvm::LLVMContext *TheContext;
     llvm::IRBuilder<> *Builder;
     std::map<std::string, llvm::AllocaInst *> namedValues;    
-    llvm::Value* LogError(const char*);
+    void LogError(const char*);
 };
 #endif /* CodeGenVisitor_hpp */
