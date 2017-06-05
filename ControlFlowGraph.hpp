@@ -23,8 +23,6 @@ private:
     std::map<BasicBlock *, int> _bbVisitedMap;
     std::map<BasicBlock *, std::vector<BasicBlock *>> _bbChildrenMap;
     std::map<BasicBlock *, std::set<BasicBlock *>>* _dominanceFrontier;
-
-    
     
     void PredOrderDFS(BasicBlock *bb);
     void PostOrderDFS(BasicBlock *bb);
@@ -39,5 +37,8 @@ public:
     void ComputeDomTree();
     void ComputeBaseDominanceFrontier();
     void AddBasicBlock(BasicBlock *bb);
+    
+    // TODO: replace to private and make available for friend Builder
+    std::vector<BasicBlock *> GetChildrenForDominator(BasicBlock *bb) {return _bbChildrenMap[bb];};
 };
 #endif /* ControlFlowGraph_hpp */
