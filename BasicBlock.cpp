@@ -24,5 +24,5 @@ void BasicBlock::AddLink(BasicBlock *pred, BasicBlock *succ) {
 }
 
 std::string BasicBlock::stringValue() {
-    return "bb #" + std::to_string(index);
+    return "bb #" + std::to_string(_index) + " " + _label;
 }

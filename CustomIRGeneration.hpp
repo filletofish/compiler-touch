@@ -50,7 +50,9 @@ private:
     std::map<std::string, int*> namedValues;
     BasicBlock *currentBB;
     BasicBlock *entryBB;
-    BasicBlock *CreateBB();
+    BasicBlock *CreateBB(std::string label);
+    void CreateBr(BasicBlock *targetBB);
+    void CreateConditionalBr(AbstractExpression *condition, BasicBlock *thenBB, BasicBlock *elseBB);
     ControlFlowGraph *cfg;
     int LogError(const char*);
 };

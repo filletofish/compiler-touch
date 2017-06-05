@@ -14,17 +14,30 @@
 
 using namespace std;
 
-BasicBlock* CustomIRGenerationVisitor::CreateBB() {
+BasicBlock* CustomIRGenerationVisitor::CreateBB(string label) {
     int nextIndex = (int)cfg->basicBlocks.size();
-    BasicBlock *bb = new BasicBlock(nextIndex);
+    BasicBlock *bb = new BasicBlock(nextIndex, label);
     cfg->AddBasicBlock(bb);
     return bb;
 }
 
 CustomIRGenerationVisitor::CustomIRGenerationVisitor(ControlFlowGraph *cfg) :cfg(cfg) {
-    BasicBlock *bb = CreateBB();
+    BasicBlock *bb = CreateBB("entry");
     currentBB = bb;
     entryBB = bb;
+}
+
+void CustomIRGenerationVisitor::CreateBr(BasicBlock *targetBB) {
+    BasicBlock::AddLink(currentBB, targetBB);
+    BranchInstruction *brInstruction = new BranchInstruction(targetBB);
+    currentBB->AddInstruction(brInstruction);
+}
+
+void CustomIRGenerationVisitor::CreateConditionalBr(AbstractExpression *condition, BasicBlock *thenBB, BasicBlock *elseBB) {
+    BasicBlock::AddLink(currentBB, thenBB);
+    BasicBlock::AddLink(currentBB, elseBB);
+    BranchInstruction *brInstruction = new BranchInstruction(condition, thenBB, elseBB);
+    currentBB->AddInstruction(brInstruction);
 }
 
 int CustomIRGenerationVisitor::Visit(NumberExpression *exp) {
@@ -47,24 +60,19 @@ int CustomIRGenerationVisitor::Visit(AssignExpression *exp) {
 }
 
 int CustomIRGenerationVisitor::Visit(IfExpression *exp) {
-    BasicBlock *thenBB = CreateBB();
-    BasicBlock *elseBB = CreateBB();
-    BasicBlock *mergeBB = CreateBB();
+    BasicBlock *thenBB = CreateBB("then");
+    BasicBlock *elseBB = CreateBB("else");
+    BasicBlock *mergeBB = CreateBB("if_cont");
     
-    BasicBlock::AddLink(currentBB, thenBB);
-    BasicBlock::AddLink(currentBB, elseBB);
-    BasicBlock::AddLink(thenBB, mergeBB);
-    BasicBlock::AddLink(elseBB, mergeBB);
-    
-    currentBB->AddInstruction(new BranchInstruction(exp->conditionExp, thenBB, elseBB));
+    CreateConditionalBr(exp->conditionExp, elseBB, thenBB);
     
     currentBB = thenBB;
     exp->thenExp->Accept(this);
-    currentBB->AddInstruction(new BranchInstruction(mergeBB));
+    CreateBr(mergeBB);
     
     currentBB = elseBB;
     exp->elseExp->Accept(this);
-    currentBB->AddInstruction(new BranchInstruction(mergeBB));
+    CreateBr(mergeBB);
     
     currentBB = mergeBB;
     
@@ -84,9 +92,9 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     namedValues[exp->index->name] = &startVal;
     
     
-    BasicBlock *loopCoonditionBB = CreateBB();
-    BasicBlock::AddLink(currentBB, loopCoonditionBB);
-    currentBB->AddInstruction(new BranchInstruction(loopCoonditionBB));
+    BasicBlock *loopCoonditionBB = CreateBB("loop_cond");
+    CreateBr(loopCoonditionBB);
+    
     currentBB = loopCoonditionBB;
     
 
@@ -94,19 +102,16 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     bblocksForVar[exp->index->name].insert(currentBB);
     exp->end->Accept(this);
     // Make the new basic block for the loop body
-    BasicBlock *LoopBB = CreateBB();
-    BasicBlock *AfterBB = CreateBB();
-    BasicBlock::AddLink(loopCoonditionBB, LoopBB);
-    BasicBlock::AddLink(loopCoonditionBB, AfterBB);
+    BasicBlock *loopBodyBB = CreateBB("loop_body");
+    BasicBlock *loopAfterBB = CreateBB("loop_cont");
     // MARK: Make pseudo step it in expression
     VariableExpession *pseudoVarForConditionCheck = new VariableExpession(exp->index->name);
     BinaryExpression *pseudoCompExp = new BinaryExpression('-', exp->end, pseudoVarForConditionCheck);
-    currentBB->AddInstruction(new BranchInstruction(pseudoCompExp, LoopBB, AfterBB));
     
-    
+    CreateConditionalBr(pseudoCompExp, loopBodyBB, loopAfterBB);
     
     // Start insertion in LoopBB.
-    currentBB = LoopBB;
+    currentBB = loopBodyBB;
     // Emit the body of the loop.  This, like any other expr, can change the
     // current BB.  Note that we ignore the value computed by the body, but don't
     // allow an error.
@@ -116,11 +121,11 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     bblocksForVar[exp->index->name].insert(currentBB);
     BinaryExpression *pseudoStepExp = new BinaryExpression('+', new VariableExpession(exp->index->name), new NumberExpression(1));
     currentBB->AddInstruction(new AssignInstruction(exp->index, pseudoStepExp));
-    currentBB->AddInstruction(new BranchInstruction(loopCoonditionBB));
-    BasicBlock::AddLink(LoopBB, loopCoonditionBB);
+    
+    CreateBr(loopCoonditionBB);
 
     // Any new code will be inserted in AfterBB.
-    currentBB = AfterBB;
+    currentBB = loopAfterBB;
     
     // Restore the unshadowed variable.
     if (oldVal)
@@ -308,12 +313,5 @@ void SSAFormer::TraverseBBWithVar(BasicBlock *bb, std::string varName) {
                 stack.pop_back();
             }
         }
-        
-//        if (statement->type == PHI) {
-//            PhiInstruction *phiInstr = static_cast<PhiInstruction *>(statement);
-//            if (phiInstr->var->name == varName) {
-//                stack.pop_back();
-//            }
-//        }
     }
 }

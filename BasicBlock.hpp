@@ -22,7 +22,8 @@ class BasicBlock;
 
 class BasicBlock {
 private:
-    int index;
+    int _index;
+    std::string _label;
 public:
     std::string stringValue();
     std::vector<AbstractInstruction *> instructions;
@@ -33,7 +34,7 @@ public:
     void AddInstruction(AbstractInstruction *instruction);
     static void AddLink(BasicBlock *pred, BasicBlock *succ);
     
-    BasicBlock(int index): index(index) {};
+    BasicBlock(int index, std::string label): _index(index), _label(label) {};
 };
 
 #endif /* BasicBlock_hpp */
