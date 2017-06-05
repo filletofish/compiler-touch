@@ -11,6 +11,8 @@
 #include "Expressions.hpp"
 #include "IRStatements.hpp"
 #include "ControlFlowGraph.hpp"
+#include "GraphVizPrinter.hpp"
+
 #include <assert.h> 
 
 using namespace std;
@@ -197,6 +199,10 @@ void IRGenerator::CommitBuildingAndDump() {
             printf("\t%s\n", (*it)->Dump().c_str());
         }
     }
+}
+
+GraphVizPrinter IRGenerator::GetGraphVizPrinter() {
+    return GraphVizPrinter(cfg);
 }
 
 
