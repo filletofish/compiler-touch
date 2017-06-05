@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
+#include <vector>
 #include <set>
 
 class NumberExpression;
@@ -41,6 +42,7 @@ public:
     int Visit(BinaryExpression *exp);
     
     void InsertPhiNodes();
+    void BuildSSAForm();
     void Dump();
     CustomIRGenerationVisitor(ControlFlowGraph *cfg);
     
@@ -66,5 +68,17 @@ public:
     void Visit(BranchInstruction *instr);
     void Visit(AssignInstruction *instr);
     std::set<VariableExpession *> AllVarsUsedInInstruction(AbstractInstruction *instruction);
+};
+
+class SSAFormer {
+private:
+    int counter;
+    std::vector<int> stack;
+    VarSearchVisitor varSearcher = VarSearchVisitor();
+    void TraverseBBWithVar(BasicBlock *bb, std::string varName);
+    ControlFlowGraph *cfg;
+public:
+    void RenameVarToSSAForm(std::string varName);
+    SSAFormer(ControlFlowGraph *cfg) : cfg(cfg) {};
 };
 #endif /* CustomIRGeneration_hpp */

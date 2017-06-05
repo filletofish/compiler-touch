@@ -72,13 +72,16 @@ int CustomIRGenerationVisitor::Visit(IfExpression *exp) {
 }
 
 int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
+    // TODO: Refactor to make less pseudo steps and to copy var instead of creating new
+    
     bblocksForVar[exp->index->name].insert(currentBB);
     // Emit the start code first, without 'variable' in scope.
     int startVal = exp->start->Accept(this);
-    
+    VariableExpession *pseudoVarForStart = new VariableExpession(exp->index->name);
+    currentBB->AddInstruction(new AssignInstruction(pseudoVarForStart, exp->start));
+
     int *oldVal = namedValues[exp->index->name];
     namedValues[exp->index->name] = &startVal;
-    
     
     
     BasicBlock *loopCoonditionBB = CreateBB();
@@ -86,14 +89,18 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     currentBB->AddInstruction(new BranchInstruction(loopCoonditionBB));
     currentBB = loopCoonditionBB;
     
+
     // Compute the end condition.
+    bblocksForVar[exp->index->name].insert(currentBB);
+    exp->end->Accept(this);
     // Make the new basic block for the loop body
     BasicBlock *LoopBB = CreateBB();
     BasicBlock *AfterBB = CreateBB();
     BasicBlock::AddLink(loopCoonditionBB, LoopBB);
     BasicBlock::AddLink(loopCoonditionBB, AfterBB);
     // MARK: Make pseudo step it in expression
-    BinaryExpression *pseudoCompExp = new BinaryExpression('-', exp->end, exp->index);
+    VariableExpession *pseudoVarForConditionCheck = new VariableExpession(exp->index->name);
+    BinaryExpression *pseudoCompExp = new BinaryExpression('-', exp->end, pseudoVarForConditionCheck);
     currentBB->AddInstruction(new BranchInstruction(pseudoCompExp, LoopBB, AfterBB));
     
     
@@ -107,7 +114,7 @@ int CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     
     // MARK: Make pseudo step it in expression
     bblocksForVar[exp->index->name].insert(currentBB);
-    BinaryExpression *pseudoStepExp = new BinaryExpression('+', exp->index, new NumberExpression(1));
+    BinaryExpression *pseudoStepExp = new BinaryExpression('+', new VariableExpession(exp->index->name), new NumberExpression(1));
     currentBB->AddInstruction(new AssignInstruction(exp->index, pseudoStepExp));
     currentBB->AddInstruction(new BranchInstruction(loopCoonditionBB));
     BasicBlock::AddLink(LoopBB, loopCoonditionBB);
@@ -229,4 +236,84 @@ void VarSearchVisitor::Visit(ForExpression *exp) {
     exp->end->Accept(this);
     exp->body->Accept(this);
     exp->start->Accept(this);
+}
+
+// MARK: SSA Form
+
+void CustomIRGenerationVisitor::BuildSSAForm() {
+    SSAFormer ssaFormer = SSAFormer(cfg);
+    for (auto pair : bblocksForVar) {
+        std::string var = pair.first;
+        ssaFormer.RenameVarToSSAForm(var);
+    }
+}
+
+
+void SSAFormer::RenameVarToSSAForm(std::string varName) {
+    counter = 0;
+    stack.clear();
+    TraverseBBWithVar(cfg->basicBlocks.front(), varName);
+}
+
+void SSAFormer::TraverseBBWithVar(BasicBlock *bb, std::string varName) {
+    for (auto instr : bb->instructions) {
+        // Renaming  vars in all rhs
+        if (instr->type != PHI) {
+            set<VariableExpession *> vars = varSearcher.AllVarsUsedInInstruction(instr);
+            for (auto var : vars) {
+                if (var->name == varName)
+                    var->SetSSAIndex(stack.back());
+            }
+        }
+        
+        // Renaming  vars in all lhs
+        if (instr->type == ASSIGN) {
+            AssignInstruction *assignInstr = static_cast<AssignInstruction *>(instr);
+            if (assignInstr->var->name == varName) {
+                assignInstr->var->SetSSAIndex(counter);
+                stack.push_back(counter);
+                counter += 1;
+            }
+        }
+        
+        if (instr->type == PHI) {
+            PhiInstruction *phiInstr = static_cast<PhiInstruction *>(instr);
+            if (phiInstr->var->name == varName) {
+                phiInstr->var->SetSSAIndex(counter);
+                stack.push_back(counter);
+                counter += 1;
+            }
+        }
+    }
+    
+    for (auto succBB : bb->succs) {
+        for (auto instr : succBB->instructions) {
+            if (instr->type == PHI) {
+                PhiInstruction *phiInstr = static_cast<PhiInstruction *>(instr);
+                if (phiInstr->bbToVarMap.count(bb) && phiInstr->bbToVarMap[bb]->name == varName) {
+                    phiInstr->bbToVarMap[bb]->SetSSAIndex(stack.back());
+                }
+            }
+        }
+    }
+    
+    for (auto child : cfg->GetChildrenForDominator(bb)) {
+        TraverseBBWithVar(child, varName);
+    }
+    
+    for (auto statement : bb->instructions) {
+        if (statement->type == ASSIGN) {
+            AssignInstruction *assignInstr = static_cast<AssignInstruction *>(statement);
+            if (assignInstr->var->name == varName) {
+                stack.pop_back();
+            }
+        }
+        
+//        if (statement->type == PHI) {
+//            PhiInstruction *phiInstr = static_cast<PhiInstruction *>(statement);
+//            if (phiInstr->var->name == varName) {
+//                stack.pop_back();
+//            }
+//        }
+    }
 }
