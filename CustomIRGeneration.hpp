@@ -24,9 +24,9 @@ class BinaryExpression;
 class ControlFlowGraph;
 class BasicBlock;
 class AbstractExpression;
-class AbstractInstruction;
-class BranchInstruction;
-class AssignInstruction;
+class AbstractStatement;
+class BranchStatement;
+class AssignStatement;
 
 
 class CustomIRGenerationVisitor {
@@ -67,9 +67,9 @@ public:
     void Visit(IfExpression *exp);
     void Visit(ForExpression *exp);
     void Visit(BinaryExpression *exp);
-    void Visit(BranchInstruction *instr);
-    void Visit(AssignInstruction *instr);
-    std::set<VariableExpession *> AllVarsUsedInInstruction(AbstractInstruction *instruction);
+    void Visit(BranchStatement *stmt);
+    void Visit(AssignStatement *stmt);
+    std::set<VariableExpession *> AllVarsUsedInStatement(AbstractStatement *statement);
 };
 
 class SSAFormer {

@@ -13,7 +13,7 @@
 #include <vector>
 #include <string>
 
-class AbstractInstruction;
+class AbstractStatement;
 class BasicBlock;
 
 /* In syntax analysis, a basic block is a straight-line code sequence with no branches in except to the entry and no branches out except at the exit.
@@ -26,12 +26,12 @@ private:
     std::string _label;
 public:
     std::string stringValue();
-    std::vector<AbstractInstruction *> instructions;
+    std::vector<AbstractStatement *> statements;
     std::vector<BasicBlock *> succs;
     std::vector<BasicBlock *> preds;
     BasicBlock *dominator;
 
-    void AddInstruction(AbstractInstruction *instruction);
+    void AddStatement(AbstractStatement *statement);
     static void AddLink(BasicBlock *pred, BasicBlock *succ);
     
     BasicBlock(int index, std::string label): _index(index), _label(label) {};

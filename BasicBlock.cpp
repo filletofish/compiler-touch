@@ -9,8 +9,8 @@
 #include "BasicBlock.hpp"
 using namespace std;
 
-void BasicBlock::AddInstruction(AbstractInstruction *instruction) {
-    instructions.push_back(instruction);
+void BasicBlock::AddStatement(AbstractStatement *statement) {
+    statements.push_back(statement);
 }
 
 void BasicBlock::AddLink(BasicBlock *pred, BasicBlock *succ) {
