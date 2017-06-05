@@ -47,12 +47,29 @@ int main(int argc, const char * argv[]) {
         }
     }
     
+    
+    bool shouldUseLLVM = false;
+    bool shouldPringGraphViz = false;
+    
+    for (int i = 2; i < argc; i++) {
+        if (argc > 2) {
+            if (strcmp(argv[i], "-llvm") == 0) {
+                shouldUseLLVM = true;
+            }
+            if (strcmp(argv[i], "-gv") == 0) {
+                shouldPringGraphViz = true;
+            }
+        }
+
+    }
+
+    
     Lexer *lexer = new Lexer();
     Parser *parser = new Parser(lexer);
     std::vector<AbstractExpression *> expressions = parser->Parse();
     
     
-    if (/* DISABLES CODE */ (0)) {
+    if (shouldUseLLVM) {
         LLVMContext context;
         IRBuilder<> Builder(context);
         
@@ -75,6 +92,9 @@ int main(int argc, const char * argv[]) {
         Builder.CreateRet(value);
         
         module->dump();
+        if (shouldPringGraphViz) {
+            printf("Printing GraphViz is not available in llvm mode\n");
+        }
     } else {
         IRGenerator irGenerator = IRGenerator();
         for (std::vector<AbstractExpression *>::iterator it = expressions.begin(); it != expressions.end(); ++it)
@@ -82,7 +102,9 @@ int main(int argc, const char * argv[]) {
         
         
         irGenerator.CommitBuildingAndDump();
-        irGenerator.GetGraphVizPrinter().print();
+        if (shouldPringGraphViz) {
+            irGenerator.GetGraphVizPrinter().print();
+        }
     }
     
     return 0;
