@@ -22,7 +22,8 @@ BasicBlock* IRGenerator::CreateBB(string label) {
     return bb;
 }
 
-IRGenerator::IRGenerator(ControlFlowGraph *cfg) :cfg(cfg) {
+IRGenerator::IRGenerator() {
+    cfg = new ControlFlowGraph();
     BasicBlock *bb = CreateBB("entry");
     currentBB = bb;
     entryBB = bb;

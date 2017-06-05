@@ -48,7 +48,7 @@ public:
     
     int GenerateIR(AbstractExpression *exp);
     void CommitBuildingAndDump();
-    IRGenerator(ControlFlowGraph *cfg);
+    IRGenerator();
     
 private:
     int _latestValue;
