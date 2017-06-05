@@ -37,7 +37,7 @@ class AbstractExpression;
 class ControlFlowGraph;
 class BasicBlock;
 
-class IRLLVMGenerationVisitor : public AbstractVisitor {
+class LLVMIRGenerator : public AbstractVisitor {
 public:
     void Visit(NumberExpression *exp) override;
     void Visit(VariableExpession *exp) override;
@@ -49,8 +49,10 @@ public:
     // not implemented, because visits only expressions
     virtual void Visit(BranchStatement *stmt) override {};
     virtual void Visit(AssignStatement *stmt) override {};
+    
     llvm::Value* GenerateIR(AbstractExpression *exp);
-    IRLLVMGenerationVisitor(llvm::LLVMContext *TheContext,
+    
+    LLVMIRGenerator(llvm::LLVMContext *TheContext,
                    llvm::IRBuilder<> *Builder) : TheContext(TheContext), Builder(Builder){};
     
 private:

@@ -1,28 +1,28 @@
 //
-//  IRLLVMGenerationVisitor.cpp
+//  LLVMIRGenerator.cpp
 //  Compiler
 //
 //  Created by Филипп Федяков on 28.05.17.
 //  Copyright © 2017 filletofish. All rights reserved.
 //
 
-#include "IRGeneration.hpp"
+#include "LLVMIRGenerator.hpp"
 #include "Expressions.hpp"
 #include "ControlFlowGraph.hpp"
 #include "BasicBlock.hpp"
 
 using namespace llvm;
 
-llvm::Value* IRLLVMGenerationVisitor::GenerateIR(AbstractExpression *exp) {
+llvm::Value* LLVMIRGenerator::GenerateIR(AbstractExpression *exp) {
     exp->Accept(this);
     return _latestValue;
 }
 
-void IRLLVMGenerationVisitor::Visit(NumberExpression *exp){
+void LLVMIRGenerator::Visit(NumberExpression *exp){
     _latestValue = ConstantInt::get(*TheContext, APInt(32, exp->value, false));
 }
 
-void IRLLVMGenerationVisitor::Visit(VariableExpession *exp) {
+void LLVMIRGenerator::Visit(VariableExpession *exp) {
     llvm::AllocaInst *alloca = namedValues[exp->name];
     if (!alloca) {
         LogError("Unknown variable name");
@@ -31,7 +31,7 @@ void IRLLVMGenerationVisitor::Visit(VariableExpession *exp) {
     _latestValue = Builder->CreateLoad(alloca, exp->name.c_str());
 }
 
-void IRLLVMGenerationVisitor::Visit(BinaryExpression *exp) {
+void LLVMIRGenerator::Visit(BinaryExpression *exp) {
     llvm::Value *lhsValue = GenerateIR(exp->lhs);
     llvm::Value *rhsValue = GenerateIR(exp->rhs);
     if (!lhsValue || !rhsValue)
@@ -49,7 +49,7 @@ void IRLLVMGenerationVisitor::Visit(BinaryExpression *exp) {
     }
 }
 
-void IRLLVMGenerationVisitor::Visit(AssignExpression *exp) {
+void LLVMIRGenerator::Visit(AssignExpression *exp) {
     llvm::Value *assignValue = GenerateIR(exp->expr);
     if (!assignValue)
         return;
@@ -65,7 +65,7 @@ void IRLLVMGenerationVisitor::Visit(AssignExpression *exp) {
 }
 
 
-void IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
+void LLVMIRGenerator::Visit(IfExpression *exp) {
     llvm::Value *CondV = GenerateIR(exp->conditionExp);
     if (!CondV)
         return;
@@ -127,7 +127,7 @@ void IRLLVMGenerationVisitor::Visit(IfExpression *exp) {
 }
 
 
-void IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
+void LLVMIRGenerator::Visit(ForExpression *exp) {
     
     Function *TheFunction = Builder->GetInsertBlock()->getParent();
     
@@ -201,7 +201,7 @@ void IRLLVMGenerationVisitor::Visit(ForExpression *exp) {
     _latestValue = llvm::Constant::getNullValue(llvm::Type::getInt32Ty(*TheContext));
 }
 
-void IRLLVMGenerationVisitor::LogError(const char *Str) {
+void LLVMIRGenerator::LogError(const char *Str) {
     fprintf(stderr, "Error: %s\n", Str);
     _latestValue = nullptr;
 }

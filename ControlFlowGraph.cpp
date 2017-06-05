@@ -46,7 +46,7 @@ void ControlFlowGraph::PostOrderDFS(BasicBlock *bb) {
     _bbInPostOrder->push_back(bb);
 }
 
-void ControlFlowGraph::ComputeDomTree() {
+void ControlFlowGraph::ComputeDominatorTree() {
     if (!_bbInPredOrder) ComputePredOrder();
     
     // compute dominators
@@ -65,7 +65,7 @@ void ControlFlowGraph::ComputeDomTree() {
     for (auto v : basicBlocks) {
         BasicBlock *dominator = v->dominator;
         if (dominator) {
-            _bbChildrenMap[dominator].push_back(v);
+            dominator->domimatingBlocks.push_back(v);
         }
     }
 }
@@ -77,7 +77,6 @@ void ControlFlowGraph::DomDFS(BasicBlock *bb) {
     }
 }
 
-//set<BasicBlock *> s
 void ControlFlowGraph::ComputeBaseDominanceFrontier() {
     if (_dominanceFrontier) { return;}
     _dominanceFrontier = new map<BasicBlock *, set<BasicBlock *>>;
@@ -90,7 +89,7 @@ void ControlFlowGraph::ComputeBaseDominanceFrontier() {
                 _dominanceFrontier->at(x).insert(y);
         }
         
-        for (auto z : _bbChildrenMap[x]) {
+        for (auto z : x->domimatingBlocks) {
             for (auto y : _dominanceFrontier->at(z)) {
                 if (y->dominator != x)
                     _dominanceFrontier->at(x).insert(y);
@@ -100,6 +99,8 @@ void ControlFlowGraph::ComputeBaseDominanceFrontier() {
 }
 
 set<BasicBlock *> ControlFlowGraph::GetMergedDominanceFrontierFromSubSet(set<BasicBlock *> subSet) {
+    if (!_dominanceFrontier) ComputeBaseDominanceFrontier();
+    
     set<BasicBlock *> mergedDF;
     for (auto v : subSet) {
         set<BasicBlock *> df = _dominanceFrontier->at(v);
@@ -124,5 +125,12 @@ set<BasicBlock *> ControlFlowGraph::GetDominanceFrontierForSubSet(std::set<Basic
     }
     
     return  result;
+}
+
+void ControlFlowGraph::CommitAllChanges() {
+    ComputePredOrder();
+    ComputePostOrder();
+    ComputeDominatorTree();
+    ComputeBaseDominanceFrontier();
 }
 

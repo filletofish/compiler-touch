@@ -29,7 +29,10 @@ public:
     std::vector<AbstractStatement *> statements;
     std::vector<BasicBlock *> succs;
     std::vector<BasicBlock *> preds;
+    
+    // Dominator Tree
     BasicBlock *dominator;
+    std::vector<BasicBlock *> domimatingBlocks;
 
     void AddStatement(AbstractStatement *statement);
     static void AddLink(BasicBlock *pred, BasicBlock *succ);

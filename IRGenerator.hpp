@@ -31,7 +31,7 @@ class BranchStatement;
 class AssignStatement;
 
 
-class CustomIRGenerationVisitor : public AbstractVisitor {
+class IRGenerator : public AbstractVisitor {
 private:
     std::map<std::string, std::set<BasicBlock *>> bblocksForVar;
 public:
@@ -47,47 +47,22 @@ public:
     virtual void Visit(AssignStatement *stmt) override {};
     
     int GenerateIR(AbstractExpression *exp);
-    void InsertPhiNodes();
-    void BuildSSAForm();
-    void Dump();
-    CustomIRGenerationVisitor(ControlFlowGraph *cfg);
+    void CommitBuildingAndDump();
+    IRGenerator(ControlFlowGraph *cfg);
     
 private:
     int _latestValue;
     std::map<std::string, int*> namedValues;
     BasicBlock *currentBB;
     BasicBlock *entryBB;
+    ControlFlowGraph *cfg;
+    
     BasicBlock *CreateBB(std::string label);
     void CreateBr(BasicBlock *targetBB);
     void CreateConditionalBr(AbstractExpression *condition, BasicBlock *thenBB, BasicBlock *elseBB);
-    ControlFlowGraph *cfg;
+    
+    void InsertPhiNodes();
+    void BuildSSAForm();
     void LogError(const char*);
-};
-
-class VarSearchVisitor : public AbstractVisitor {
-private:
-    std::set<VariableExpession *> vars;
-public:
-    void Visit(NumberExpression *exp) override;
-    void Visit(VariableExpession *exp) override;
-    void Visit(AssignExpression *exp) override;
-    void Visit(IfExpression *exp) override;
-    void Visit(ForExpression *exp) override;
-    void Visit(BinaryExpression *exp) override;
-    virtual void Visit(BranchStatement *stmt) override;
-    virtual void Visit(AssignStatement *stmt) override;
-    std::set<VariableExpession *> AllVarsUsedInStatement(AbstractStatement *statement);
-};
-
-class SSAFormer {
-private:
-    int counter;
-    std::vector<int> stack;
-    VarSearchVisitor varSearcher = VarSearchVisitor();
-    void TraverseBBWithVar(BasicBlock *bb, std::string varName);
-    ControlFlowGraph *cfg;
-public:
-    void RenameVarToSSAForm(std::string varName);
-    SSAFormer(ControlFlowGraph *cfg) : cfg(cfg) {};
 };
 #endif /* CustomIRGeneration_hpp */

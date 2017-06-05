@@ -6,7 +6,7 @@
 //  Copyright © 2017 filletofish. All rights reserved.
 //
 
-#include "CustomIRGeneration.hpp"
+#include "IRGenerator.hpp"
 #include "BasicBlock.hpp"
 #include "Expressions.hpp"
 #include "IRStatements.hpp"
@@ -15,49 +15,49 @@
 
 using namespace std;
 
-BasicBlock* CustomIRGenerationVisitor::CreateBB(string label) {
+BasicBlock* IRGenerator::CreateBB(string label) {
     int nextIndex = (int)cfg->basicBlocks.size();
     BasicBlock *bb = new BasicBlock(nextIndex, label);
     cfg->AddBasicBlock(bb);
     return bb;
 }
 
-CustomIRGenerationVisitor::CustomIRGenerationVisitor(ControlFlowGraph *cfg) :cfg(cfg) {
+IRGenerator::IRGenerator(ControlFlowGraph *cfg) :cfg(cfg) {
     BasicBlock *bb = CreateBB("entry");
     currentBB = bb;
     entryBB = bb;
 }
 
-void CustomIRGenerationVisitor::CreateBr(BasicBlock *targetBB) {
+void IRGenerator::CreateBr(BasicBlock *targetBB) {
     BasicBlock::AddLink(currentBB, targetBB);
     BranchStatement *branchStmt = new BranchStatement(targetBB);
     currentBB->AddStatement(branchStmt);
 }
 
-void CustomIRGenerationVisitor::CreateConditionalBr(AbstractExpression *condition, BasicBlock *thenBB, BasicBlock *elseBB) {
+void IRGenerator::CreateConditionalBr(AbstractExpression *condition, BasicBlock *thenBB, BasicBlock *elseBB) {
     BasicBlock::AddLink(currentBB, thenBB);
     BasicBlock::AddLink(currentBB, elseBB);
     BranchStatement *branchStmt = new BranchStatement(condition, thenBB, elseBB);
     currentBB->AddStatement(branchStmt);
 }
 
-int CustomIRGenerationVisitor::GenerateIR(AbstractExpression *exp) {
+int IRGenerator::GenerateIR(AbstractExpression *exp) {
     exp->Accept(this);
     return _latestValue;
 }
 
-void CustomIRGenerationVisitor::Visit(NumberExpression *exp) {
+void IRGenerator::Visit(NumberExpression *exp) {
     _latestValue = exp->value;
 }
 
-void CustomIRGenerationVisitor::Visit(VariableExpession *exp) {
+void IRGenerator::Visit(VariableExpession *exp) {
     int* value = namedValues[exp->name];
     if (!value)
         return LogError("Unknown variable name");
     _latestValue = *value;
 }
 
-void CustomIRGenerationVisitor::Visit(AssignExpression *exp) {
+void IRGenerator::Visit(AssignExpression *exp) {
     bblocksForVar[exp->varExp->name].insert(currentBB);
     int assignValue = GenerateIR(exp->expr);
     namedValues[exp->varName()] = &assignValue;
@@ -65,7 +65,7 @@ void CustomIRGenerationVisitor::Visit(AssignExpression *exp) {
     _latestValue = assignValue;
 }
 
-void CustomIRGenerationVisitor::Visit(IfExpression *exp) {
+void IRGenerator::Visit(IfExpression *exp) {
     BasicBlock *thenBB = CreateBB("then");
     BasicBlock *elseBB = CreateBB("else");
     BasicBlock *mergeBB = CreateBB("if_cont");
@@ -85,7 +85,7 @@ void CustomIRGenerationVisitor::Visit(IfExpression *exp) {
     _latestValue = 0;
 }
 
-void CustomIRGenerationVisitor::Visit(ForExpression *exp) {
+void IRGenerator::Visit(ForExpression *exp) {
     // TODO: Refactor to make less pseudo steps and to copy var instead of creating new
     
     bblocksForVar[exp->index->name].insert(currentBB);
@@ -143,7 +143,7 @@ void CustomIRGenerationVisitor::Visit(ForExpression *exp) {
     _latestValue = 0;
 }
 
-void CustomIRGenerationVisitor::Visit(BinaryExpression *exp) {
+void IRGenerator::Visit(BinaryExpression *exp) {
     
     int lhsValue = GenerateIR(exp->lhs);
     int rhsValue = GenerateIR(exp->rhs);
@@ -161,13 +161,20 @@ void CustomIRGenerationVisitor::Visit(BinaryExpression *exp) {
     };
 }
 
-void CustomIRGenerationVisitor::LogError(const char * str) {
+void IRGenerator::LogError(const char * str) {
     fprintf(stderr, "Error: %s\n", str);
     _latestValue = 0;
 }
 
 
-void CustomIRGenerationVisitor::Dump() {
+void IRGenerator::CommitBuildingAndDump() {
+    cfg->CommitAllChanges();
+    
+    InsertPhiNodes();
+    
+    BuildSSAForm();
+    
+    
     for (auto it = cfg->basicBlocks.begin(); it != cfg->basicBlocks.end(); ++it) {
         BasicBlock *bb = *it;
         string succs_enumeration = "";
@@ -194,7 +201,7 @@ void CustomIRGenerationVisitor::Dump() {
 
 // MARK: Phi Nodes
 
-void CustomIRGenerationVisitor::InsertPhiNodes() {
+void IRGenerator::InsertPhiNodes() {
     for (auto it : bblocksForVar) {
         std::string variableName = it.first;
         std::set<BasicBlock *> assignedInBlocks = it.second;
@@ -212,6 +219,21 @@ void CustomIRGenerationVisitor::InsertPhiNodes() {
 }
 
 // MARK: VAR SEARCH
+
+class VarSearchVisitor : public AbstractVisitor {
+private:
+    std::set<VariableExpession *> vars;
+public:
+    void Visit(NumberExpression *exp) override;
+    void Visit(VariableExpession *exp) override;
+    void Visit(AssignExpression *exp) override;
+    void Visit(IfExpression *exp) override;
+    void Visit(ForExpression *exp) override;
+    void Visit(BinaryExpression *exp) override;
+    virtual void Visit(BranchStatement *stmt) override;
+    virtual void Visit(AssignStatement *stmt) override;
+    std::set<VariableExpession *> AllVarsUsedInStatement(AbstractStatement *statement);
+};
 
 std::set<VariableExpession *> VarSearchVisitor::AllVarsUsedInStatement(AbstractStatement *statement){
     vars.clear();
@@ -255,7 +277,20 @@ void VarSearchVisitor::Visit(ForExpression *exp) {
 
 // MARK: SSA Form
 
-void CustomIRGenerationVisitor::BuildSSAForm() {
+class SSAFormer {
+private:
+    int counter;
+    std::vector<int> stack;
+    VarSearchVisitor varSearcher = VarSearchVisitor();
+    void TraverseBBWithVar(BasicBlock *bb, std::string varName);
+    ControlFlowGraph *cfg;
+public:
+    void RenameVarToSSAForm(std::string varName);
+    SSAFormer(ControlFlowGraph *cfg) : cfg(cfg) {};
+};
+
+
+void IRGenerator::BuildSSAForm() {
     SSAFormer ssaFormer = SSAFormer(cfg);
     for (auto pair : bblocksForVar) {
         std::string var = pair.first;
@@ -312,7 +347,7 @@ void SSAFormer::TraverseBBWithVar(BasicBlock *bb, std::string varName) {
         }
     }
     
-    for (auto child : cfg->GetChildrenForDominator(bb)) {
+    for (auto child : bb->domimatingBlocks) {
         TraverseBBWithVar(child, varName);
     }
     
