@@ -22,7 +22,10 @@ class ForExpression;
 class BinaryExpression;
 class ControlFlowGraph;
 class BasicBlock;
-
+class AbstractExpression;
+class AbstractInstruction;
+class BranchInstruction;
+class AssignInstruction;
 
 
 class CustomIRGenerationVisitor {
@@ -50,4 +53,18 @@ private:
     int LogError(const char*);
 };
 
+class VarSearchVisitor {
+private:
+    std::set<VariableExpession *> vars;
+public:
+    void Visit(NumberExpression *exp);
+    void Visit(VariableExpession *exp);
+    void Visit(AssignExpression *exp);
+    void Visit(IfExpression *exp);
+    void Visit(ForExpression *exp);
+    void Visit(BinaryExpression *exp);
+    void Visit(BranchInstruction *instr);
+    void Visit(AssignInstruction *instr);
+    std::set<VariableExpession *> AllVarsUsedInInstruction(AbstractInstruction *instruction);
+};
 #endif /* CustomIRGeneration_hpp */

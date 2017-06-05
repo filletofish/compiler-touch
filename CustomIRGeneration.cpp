@@ -188,3 +188,45 @@ void CustomIRGenerationVisitor::InsertPhiNodes() {
         }
     }
 }
+
+// MARK: VAR SEARCH
+
+std::set<VariableExpession *> VarSearchVisitor::AllVarsUsedInInstruction(AbstractInstruction *instruction){
+    vars.clear();
+    instruction->Accept(this);
+    return vars;
+}
+
+
+void VarSearchVisitor::Visit(BranchInstruction *instr) {
+    if (instr->condition)
+        instr->condition->Accept(this);
+}
+void VarSearchVisitor::Visit(AssignInstruction *instr) {
+    instr->rhs->Accept(this);
+}
+void VarSearchVisitor::Visit(NumberExpression *exp) {}
+void VarSearchVisitor::Visit(VariableExpession *exp) { vars.insert(exp); }
+void VarSearchVisitor::Visit(AssignExpression *exp) {
+    vars.insert(exp->varExp);
+    exp->expr->Accept(this);
+}
+void VarSearchVisitor::Visit(IfExpression *exp) {
+    // On current version IfExpression can't be placed in ASSIGN Instructions
+    assert("ForExpression can not be reached by VarSearchVisitor.");
+    exp->conditionExp->Accept(this);
+    exp->thenExp->Accept(this);
+    exp->elseExp->Accept(this);
+}
+void VarSearchVisitor::Visit(BinaryExpression *exp) {
+    exp->lhs->Accept(this);
+    exp->rhs->Accept(this);
+}
+void VarSearchVisitor::Visit(ForExpression *exp) {
+    // On current version ForExpr can't be placed in ASSIGN Instructions
+    assert("ForExpression can not be reached by VarSearchVisitor.");
+    vars.insert(exp->index);
+    exp->end->Accept(this);
+    exp->body->Accept(this);
+    exp->start->Accept(this);
+}

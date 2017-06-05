@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string>
 #include <map>
+#include "CustomIRGeneration.hpp"
 
 class AbstractExpression;
 class NumberExpression;
@@ -35,6 +36,7 @@ public:
     InstructionType type;
     virtual std::string Dump() = 0;
     AbstractInstruction(InstructionType type) : type(type) {};
+    virtual void Accept(VarSearchVisitor * visitor) = 0;
 };
 
 
@@ -45,6 +47,7 @@ public:
     
     std::string Dump() override;
     AssignInstruction(VariableExpession *var, AbstractExpression *rhs) : AbstractInstruction(ASSIGN), var(var), rhs(rhs) {};
+    void Accept(VarSearchVisitor * visitor) override { return visitor->Visit(this);}
 };
 
 class BranchInstruction: public AbstractInstruction {
@@ -59,6 +62,7 @@ public:
     std::string Dump() override;
     BranchInstruction (AbstractExpression *condition, BasicBlock *trueBranch, BasicBlock *falseBranch) : BranchInstruction(condition, trueBranch, falseBranch, true) {};
     BranchInstruction (BasicBlock *bb) : BranchInstruction(nullptr, bb, nullptr, false) {};
+    void Accept(VarSearchVisitor * visitor) override { return visitor->Visit(this);}
 };
 
 
@@ -68,7 +72,7 @@ public:
     std::map<BasicBlock *, VariableExpession *> bbToVarMap;
     std::string Dump() override;
     PhiInstruction (VariableExpession *var, std::map<BasicBlock *, VariableExpession *> bbToVarMap) : bbToVarMap(bbToVarMap), var(var), AbstractInstruction(PHI) {};
-    
+    void Accept(VarSearchVisitor * visitor) override {}
 };
 
 #endif /* IRInstructions_hpp */

@@ -10,14 +10,15 @@
 #include "Expressions.hpp"
 #include "BasicBlock.hpp"
 
+// TODO: Classes for variables and values, not to use Expressions
 
 std::string AssignInstruction::Dump() {
-    return var->name + " = " + rhs->stringValue;
+    return var->stringValue() + " = " + rhs->stringValue();
 }
 
 std::string BranchInstruction::Dump() {
     if (isConditional) {
-        return "branch on: " + condition->stringValue + " to: " + firstBranchBB->stringValue() + " or: " + secondBranchBB->stringValue();
+        return "branch on: " + condition->stringValue() + " to: " + firstBranchBB->stringValue() + " or: " + secondBranchBB->stringValue();
     } else {
         return "branch to: " + firstBranchBB->stringValue();
     }
@@ -26,7 +27,7 @@ std::string BranchInstruction::Dump() {
 std::string PhiInstruction::Dump() {
     std::string argEnumeration;
     for (auto arg : bbToVarMap) {
-        argEnumeration += arg.second->name + " " + arg.first->stringValue() + "; ";
+        argEnumeration += arg.second->stringValue() + " " + arg.first->stringValue() + "; ";
     }
-    return var->name + " = [" + argEnumeration + "]";
+    return var->stringValue() + " = [" + argEnumeration + "]";
 }
