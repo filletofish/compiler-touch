@@ -1,16 +1,16 @@
-# llvm-touch
+# Compiler-touch
 
-Sample compiler frontend to generate LLVM intermediate representation for simple language.
-Our languange consists of integers, mutating variables, cycles and condition statements.
+Simple compiler frontend to generate intermediate representation for simple language.
+The languange consists of integers, mutating variables, cycles and condition statements.
 
-### What is IR?
-[Wiki article](https://en.wikipedia.org/wiki/Intermediate_representation)
-Ok, then. With LLVM installed you can look at IR of C language by yourself. Just write simple C program.
+Two modes available:
 
-Use flag `-emit-llvm` and level of optimization `-O0` (from 0 to 3):
-`clang -S -emit-llvm -O0 helloworld.c`
-
-Now `hello.ll` contains the IR.
+  * Generating _my own_ intermediate presentation with features:
+    * Building Control Flow Graph
+    * Using SSA Form    
+    * Using Phi Nodes
+    
+  * Generating LLVM intermediate presentation with power of LLVM Library.
 
 ### Example:
 
@@ -30,7 +30,70 @@ else
     a = 0
 ```
 
-#### Its Intermediate representation:
+#### Control flow graph:
+
+<div id="container" align="middle" >
+    <img src="http://i.imgur.com/pKox8Zt.png" alt="" height=400px>
+</div>
+
+#### Its intermediate representation (using my own statements):
+
+```
+bb #0 entry
+		preds: 
+		succs: bb #1 loop_cond 
+		dominatedBy: 
+	a_0 = 3
+	b_0 = 0
+	i_0 = 1
+	branch to: bb #1 loop_cond
+
+bb #1 loop_cond
+		preds: bb #0 entry bb #2 loop_body 
+		succs: bb #2 loop_body bb #3 loop_cont 
+		dominatedBy: bb #0 entry
+	i_1 = [i_0 bb #0 entry; i_2 bb #2 loop_body; ]
+	a_1 = [a_0 bb #0 entry; a_2 bb #2 loop_body; ]
+	branch on: b_0 - i_1 to: bb #2 loop_body or: bb #3 loop_cont
+
+bb #2 loop_body
+		preds: bb #1 loop_cond 
+		succs: bb #1 loop_cond 
+		dominatedBy: bb #1 loop_cond
+	a_2 = a_1 + 3
+	i_2 = i_1 + 1
+	branch to: bb #1 loop_cond
+
+bb #3 loop_cont
+		preds: bb #1 loop_cond 
+		succs: bb #5 else bb #4 then 
+		dominatedBy: bb #1 loop_cond
+	branch on: b_0 to: bb #5 else or: bb #4 then
+
+bb #4 then
+		preds: bb #3 loop_cont 
+		succs: bb #6 if_cont 
+		dominatedBy: bb #3 loop_cont
+	a_3 = a_1 - 2
+	branch to: bb #6 if_cont
+
+bb #5 else
+		preds: bb #3 loop_cont 
+		succs: bb #6 if_cont 
+		dominatedBy: bb #3 loop_cont
+	a_4 = 0
+	branch to: bb #6 if_cont
+
+bb #6 if_cont
+		preds: bb #4 then bb #5 else 
+		succs: 
+		dominatedBy: bb #3 loop_cont
+	a_5 = [a_3 bb #4 then; a_4 bb #5 else; ]
+```
+
+
+
+#### Its intermediate representation produced with LLVM Library:
 
 ```
 ; ModuleID = 'My Module'
@@ -82,14 +145,23 @@ ifcont:                                           ; preds = %else, %then
 }
 ```
 
+### What is IR?
+[Wiki article](https://en.wikipedia.org/wiki/Intermediate_representation)
+
+Ok, then. With LLVM installed you can look at IR of C language by yourself. Just write simple C program.
+
+Use flag `-emit-llvm` and level of optimization `-O0` (from 0 to 3):
+`clang -S -emit-llvm -O0 helloworld.c`
+
+Now `hello.ll` contains the IR.
 
 ### Dependencies: 
 * llvm 4.0
 * clang
 
-### Compiling:
+### Building:
 ```
-clang++ -g -O3 main.cpp Parser.cpp Lexer.cpp Token.cpp Expressions.cpp IRGeneration.cpp  `llvm-config --cxxflags --ldflags --system-libs --libs core` -o compiler
+./build.sh
 ```
 
 ### Usage:
@@ -98,6 +170,8 @@ clang++ -g -O3 main.cpp Parser.cpp Lexer.cpp Token.cpp Expressions.cpp IRGenerat
 ```
 ./compiler <program.txt
 ```
+#### Use cmd argument `-gv` for printing graph viz presentation
+#### Use cmd argument `-llvm` for llvm mode
 
 ### Sources:
 
